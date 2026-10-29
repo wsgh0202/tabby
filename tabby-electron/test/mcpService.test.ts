@@ -4,6 +4,7 @@ import { test } from 'node:test'
 import { AsyncSubject, Subject } from 'rxjs'
 import { MCPService } from '../src/services/mcp.service'
 import { newMCPPermissions } from '../src/mcp/access'
+import { MCP_TOKEN_ID_PREFIX, hashMCPToken } from '../src/mcp/tokens'
 
 function setup (isMainWindow = true) {
     const windowEvents = new EventTarget()
@@ -27,10 +28,15 @@ function setup (isMainWindow = true) {
         isEnabled: () => true,
         isOpen: () => true,
         load: async () => ({ config: {}, secrets }),
-        addSecret: async secret => { secrets.push(secret) },
+        addSecret: async secret => {
+            const snapshot = [...secrets]
+            await new Promise<void>(resolve => setImmediate(resolve))
+            secrets.splice(0, secrets.length, ...snapshot, secret)
+        },
         removeSecret: async (_type, key) => {
-            const index = secrets.findIndex(secret => secret.key.id === key.id)
-            if (index !== -1) { secrets.splice(index, 1) }
+            const snapshot = secrets.filter(secret => secret.key.id !== key.id)
+            await new Promise<void>(resolve => setImmediate(resolve))
+            secrets.splice(0, secrets.length, ...snapshot)
         },
     }
     const profiles = {
@@ -106,6 +112,44 @@ test('failed token persistence rolls back both metadata and vault credentials', 
         await assert.rejects(service.createToken('Agent', newMCPPermissions()), /Save failed/)
         assert.deepEqual(config.store.mcp.tokens, [])
         assert.deepEqual(secrets, [])
+    } finally { await cleanup() }
+})
+
+test('concurrent token creation does not overwrite vault snapshots', async () => {
+    const { service, config, secrets, cleanup } = setup()
+    try {
+        const tokens = await Promise.all([
+            service.createToken('Agent A', newMCPPermissions()),
+            service.createToken('Agent B', newMCPPermissions()),
+        ])
+        assert.equal(config.store.mcp.tokens.length, 2)
+        assert.deepEqual(secrets.map(secret => secret.key.id).sort(), tokens.map(token => MCP_TOKEN_ID_PREFIX + hashMCPToken(token)).sort())
+    } finally { await cleanup() }
+})
+
+test('concurrent creation and revocation preserve the new credential', async () => {
+    const { service, config, secrets, cleanup } = setup()
+    try {
+        await service.createToken('Old agent', newMCPPermissions())
+        const oldId = config.store.mcp.tokens[0].id
+        const [token] = await Promise.all([
+            service.createToken('New agent', newMCPPermissions()),
+            service.removeToken(oldId),
+        ])
+        assert.equal(config.store.mcp.tokens.length, 1)
+        assert.deepEqual(secrets.map(secret => secret.key.id), [MCP_TOKEN_ID_PREFIX + hashMCPToken(token)])
+    } finally { await cleanup() }
+})
+
+test('a failed token transaction does not block later mutations', async () => {
+    const { service, config, secrets, cleanup } = setup()
+    try {
+        config.fail = true
+        await assert.rejects(service.createToken('Failed', newMCPPermissions()), /Save failed/)
+        config.fail = false
+        await service.createToken('Working', newMCPPermissions())
+        assert.deepEqual(config.store.mcp.tokens.map(token => token.name), ['Working'])
+        assert.equal(secrets.length, 1)
     } finally { await cleanup() }
 })
 

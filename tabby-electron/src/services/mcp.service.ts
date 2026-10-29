@@ -18,6 +18,7 @@ export class MCPService {
     private server: MCPHTTPServer
     private tokens: MCPTokens
     private pending = Promise.resolve()
+    private tokenUpdates = Promise.resolve()
     private appliedSettings: string|null = null
     private closing = false
 
@@ -63,7 +64,7 @@ export class MCPService {
     /** Only the main window owns the listener. Serialize restarts caused by config broadcasts. */
     refresh (): Promise<void> {
         this.pending = this.pending.then(async () => {
-            if (this.closing || !this.bootstrap.isMainWindow) {
+            if (!this.canListen()) {
                 return
             }
             const { enabled, port, lastRandomPort } = this.settings
@@ -73,10 +74,10 @@ export class MCPService {
             }
             this.error = null
             await this.server.stop()
-            if (this.closing) { return }
+            if (!this.canListen()) { return }
             if (enabled) {
                 const actualPort = await this.server.start(port, lastRandomPort)
-                if (this.closing) { await this.server.stop(); return }
+                if (!this.canListen()) { await this.server.stop(); return }
                 if (port === null && actualPort !== lastRandomPort) {
                     this.settings.lastRandomPort = actualPort
                     await this.config.save()
@@ -91,6 +92,10 @@ export class MCPService {
         return this.pending
     }
 
+    private canListen (): boolean {
+        return !this.closing && this.bootstrap.isMainWindow
+    }
+
     async getCatalog (): Promise<MCPCatalog> {
         const groups = await this.profiles.getProfileGroups({ includeProfiles: true, includeNonUserGroup: true })
         return {
@@ -102,38 +107,52 @@ export class MCPService {
     }
 
     async createToken (name: string, permissions: MCPPermissions): Promise<string> {
-        const { entry, token } = await this.tokens.create(name, permissions)
-        this.settings.tokens = [...this.settings.tokens, entry]
-        try {
-            await this.config.save()
-        } catch (error) {
-            this.settings.tokens = this.settings.tokens.filter(item => item.id !== entry.id)
-            await this.tokens.remove(entry.id)
-            throw error
-        }
-        return token
+        return this.mutateTokens(async () => {
+            const { entry, token } = await this.tokens.create(name, permissions)
+            this.settings.tokens = [...this.settings.tokens, entry]
+            try {
+                await this.config.save()
+            } catch (error) {
+                this.settings.tokens = this.settings.tokens.filter(item => item.id !== entry.id)
+                await this.tokens.remove(entry.id)
+                throw error
+            }
+            return token
+        })
     }
 
     async updateToken (id: string, permissions: MCPPermissions): Promise<void> {
-        validateMCPPermissions(permissions)
-        const previous = this.settings.tokens
-        if (!previous.some(token => token.id === id)) {
-            throw new Error('MCP token no longer exists')
-        }
-        this.settings.tokens = previous.map(token => token.id === id ? { ...token, ...JSON.parse(JSON.stringify(permissions)) } : token)
-        try {
-            await this.config.save()
-        } catch (error) {
-            this.settings.tokens = previous
-            throw error
-        }
+        return this.mutateTokens(async () => {
+            validateMCPPermissions(permissions)
+            const previous = this.settings.tokens
+            if (!previous.some(token => token.id === id)) {
+                throw new Error('MCP token no longer exists')
+            }
+            this.settings.tokens = previous.map(token => token.id === id ? { ...token, ...JSON.parse(JSON.stringify(permissions)) } : token)
+            try {
+                await this.config.save()
+            } catch (error) {
+                this.settings.tokens = previous
+                throw error
+            }
+        })
     }
 
     async removeToken (id: string): Promise<void> {
-        // Remove the credential first: a failed config write must never restore access.
-        await this.tokens.remove(id)
-        this.settings.tokens = this.settings.tokens.filter(token => token.id !== id)
-        await this.config.save()
+        return this.mutateTokens(async () => {
+            // Remove the credential first: a failed config write must never restore access.
+            await this.tokens.remove(id)
+            this.settings.tokens = this.settings.tokens.filter(token => token.id !== id)
+            await this.config.save()
+        })
+    }
+
+    private mutateTokens<T> (mutation: () => Promise<T>): Promise<T> {
+        // Several settings tabs share this service. Vault mutations read and save a
+        // snapshot, so serialize the whole transaction, including metadata rollback.
+        const result = this.tokenUpdates.then(mutation)
+        this.tokenUpdates = result.then(() => undefined, () => undefined)
+        return result
     }
 
     async unlockVault (): Promise<void> {
