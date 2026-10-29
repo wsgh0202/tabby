@@ -100,6 +100,41 @@ describe('SSH agent identity selection', () => {
         assert.equal(methods.every(method => method.publicKey !== undefined), true)
     })
 
+    it('preserves usable matching keys when other matching identities cannot be parsed', async () => {
+        const fixture = createDependencies([
+            { publicKey: 'invalid', comment: 'production' },
+            { publicKey: 'first', comment: 'production' },
+            { publicKey: 'unrelated', comment: 'development' },
+            { publicKey: 'invalid', comment: 'production' },
+            { publicKey: 'second', comment: 'production' },
+        ])
+
+        const methods = await getAgentAuthMethods({ ...defaults, agentKeyName: 'production' }, spec, fixture.dependencies)
+
+        assert.deepEqual(methods, [
+            { type: 'agent', ...spec, publicKey: fixture.parsedKeys.get('first') },
+            { type: 'agent', ...spec, publicKey: fixture.parsedKeys.get('second') },
+        ])
+        assert.deepEqual([...fixture.parsedKeys.keys()], ['first', 'second'])
+        assert.equal(fixture.messages.length, 2)
+        for (const message of fixture.messages) {
+            assert.match(message, /Could not parse.*production.*Invalid public key/)
+        }
+    })
+
+    it('does not enable unrestricted authentication when all matching identities are invalid', async () => {
+        const fixture = createDependencies([
+            { publicKey: 'invalid', comment: 'production' },
+            { publicKey: 'unrelated', comment: 'development' },
+        ])
+
+        const methods = await getAgentAuthMethods({ ...defaults, agentKeyName: 'production' }, spec, fixture.dependencies)
+
+        assert.deepEqual(methods, [])
+        assert.equal(fixture.parsedKeys.size, 0)
+        assert.match(fixture.messages[0], /Could not parse.*production.*Invalid public key/)
+    })
+
     it('uses the trimmed name when public key text is blank', async () => {
         const fixture = createDependencies([{ publicKey: 'named-key', comment: 'production' }])
 

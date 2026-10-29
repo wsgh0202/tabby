@@ -40,11 +40,20 @@ export async function getAgentAuthMethods (
             if (!matches.length) {
                 dependencies.emitMessage(`No SSH agent keys match the configured name: ${keyName}`)
             }
-            return matches.map(identity => ({
-                type: 'agent',
-                ...spec,
-                publicKey: dependencies.parsePublicKey(identity.publicKey),
-            }))
+            const methods: AgentAuthMethod[] = []
+            // Agents may list unsupported certificates alongside usable keys with the same name.
+            for (const identity of matches) {
+                try {
+                    methods.push({
+                        type: 'agent',
+                        ...spec,
+                        publicKey: dependencies.parsePublicKey(identity.publicKey),
+                    })
+                } catch (error) {
+                    dependencies.emitMessage(`Could not parse SSH agent key named ${keyName}: ${error}`)
+                }
+            }
+            return methods
         } catch (error) {
             dependencies.emitMessage(`Could not find SSH agent keys by name: ${error}`)
             return []
