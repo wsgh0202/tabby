@@ -195,16 +195,18 @@ ul.nav-tabs(ngbNav, #nav='ngbNav')
 
             div(*ngIf='hostApp.platform !== Platform.Web && (!profile.options.auth || profile.options.auth === "agent")')
                 .mb-3
-                    label(translate) Agent key name
+                    label(for='sshAgentKeyName', translate) Agent key name
                     input.form-control(
+                        id='sshAgentKeyName',
                         type='text',
                         [(ngModel)]='profile.options.agentKeyName',
                     )
                     .text-muted(translate) Match the key name (comment) reported by the SSH agent exactly.
 
                 .mb-3
-                    label(translate) Agent public key
+                    label(for='sshAgentPublicKey', translate) Agent public key
                     textarea.form-control(
+                        id='sshAgentPublicKey',
                         rows='3',
                         [(ngModel)]='profile.options.agentPublicKey',
                     )
