@@ -193,6 +193,24 @@ ul.nav-tabs(ngbNav, #nav='ngbNav')
                     i.fas.fa-folder-open
                     span(translate) Add a private key
 
+            div(*ngIf='hostApp.platform !== Platform.Web && (!profile.options.auth || profile.options.auth === "agent")')
+                .mb-3
+                    label(translate) Agent key name
+                    input.form-control(
+                        type='text',
+                        [(ngModel)]='profile.options.agentKeyName',
+                    )
+                    .text-muted(translate) Match the key name (comment) reported by the SSH agent exactly.
+
+                .mb-3
+                    label(translate) Agent public key
+                    textarea.form-control(
+                        rows='3',
+                        [(ngModel)]='profile.options.agentPublicKey',
+                    )
+                    .text-muted(translate) Paste an OpenSSH public key. This takes precedence over the key name when both are set.
+                    .text-muted(translate) Leave both fields empty to keep the default SSH agent behavior.
+
     li(ngbNavItem)
         a(ngbNavLink, translate) Ports
         ng-template(ngbNavContent)
