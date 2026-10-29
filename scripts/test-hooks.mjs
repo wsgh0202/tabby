@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
 
 const TABBY_CORE_STUB = `
+export const BOOTSTRAP_DATA = 'BOOTSTRAP_DATA'
 export class SubscriptionContainer {
     constructor () { this.subscriptions = [] }
     addSubscription (s) { this.subscriptions.push(s) }
@@ -55,7 +56,12 @@ export function load (url, context, nextLoad) {
                 experimentalDecorators: true,
             },
         })
-        return { format: 'module', source: outputText, shortCircuit: true }
+        // Webpack also provides CommonJS require in TypeScript modules. Resolve it
+        // relative to the source file, so plugin-local runtime dependencies work.
+        const source = /\brequire\(/.test(outputText)
+            ? `import { createRequire as tabbyCreateRequire } from 'node:module';\nconst require = tabbyCreateRequire(import.meta.url);\n${outputText}`
+            : outputText
+        return { format: 'module', source, shortCircuit: true }
     }
     return nextLoad(url, context)
 }
