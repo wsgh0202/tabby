@@ -1,3 +1,23 @@
+#: tabby-ssh/src/components/sshProfileSettings.component.pug
+msgid "Agent key name"
+msgstr "Agent key name"
+
+#: tabby-ssh/src/components/sshProfileSettings.component.pug
+msgid "Agent public key"
+msgstr "Agent public key"
+
+#: tabby-ssh/src/components/sshProfileSettings.component.pug
+msgid "Leave both fields empty to keep the default SSH agent behavior."
+msgstr "Leave both fields empty to keep the default SSH agent behavior."
+
+#: tabby-ssh/src/components/sshProfileSettings.component.pug
+msgid "Match the key name (comment) reported by the SSH agent exactly."
+msgstr "Match the key name (comment) reported by the SSH agent exactly."
+
+#: tabby-ssh/src/components/sshProfileSettings.component.pug
+msgid "Paste an OpenSSH public key. This takes precedence over the key name when both are set."
+msgstr "Paste an OpenSSH public key. This takes precedence over the key name when both are set."
+
 msgid "id.port-forwarding.dynamic"
 msgstr "Dynamic"
 

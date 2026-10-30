@@ -12,6 +12,26 @@ msgstr ""
 "Language: zh_TW\n"
 "PO-Revision-Date: 2025-01-22 22:02\n"
 
+#: tabby-ssh/src/components/sshProfileSettings.component.pug
+msgid "Agent key name"
+msgstr "代理金鑰名稱"
+
+#: tabby-ssh/src/components/sshProfileSettings.component.pug
+msgid "Agent public key"
+msgstr "代理公開金鑰"
+
+#: tabby-ssh/src/components/sshProfileSettings.component.pug
+msgid "Leave both fields empty to keep the default SSH agent behavior."
+msgstr "將這兩個欄位留空以使用 SSH 代理的預設行為。"
+
+#: tabby-ssh/src/components/sshProfileSettings.component.pug
+msgid "Match the key name (comment) reported by the SSH agent exactly."
+msgstr "精確比對 SSH 代理提供的金鑰名稱（註解）。"
+
+#: tabby-ssh/src/components/sshProfileSettings.component.pug
+msgid "Paste an OpenSSH public key. This takes precedence over the key name when both are set."
+msgstr "貼上 OpenSSH 公開金鑰。同時設定公開金鑰和金鑰名稱時，優先使用公開金鑰。"
+
 #: tabby-local/src/components/terminalTab.component.ts:113
 msgid "\"{command}\" is still running. Close?"
 msgstr "\"{command}\" 正在執行。是否結束？"
@@ -2571,4 +2591,3 @@ msgstr "縮小"
 msgctxt "[Dynamic] port forwarding"
 msgid "id.port-forwarding.dynamic"
 msgstr "動態通訊埠轉發"
-

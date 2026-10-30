@@ -20,6 +20,8 @@ import { supportedAlgorithms } from '../algorithms'
 import { requestShellPTY, SSHShellChannelOptions } from './shellChannel'
 import * as russh from 'russh'
 import { selectNextAuthMethod, updateAuthPlanAfterFailure } from './authMethodSelection'
+import { AgentAuthMethod, getAgentAuthMethods } from './agentAuth'
+import { requestAgentIdentities } from './agentIdentities'
 
 const WINDOWS_OPENSSH_AGENT_PIPE = '\\\\.\\pipe\\openssh-ssh-agent'
 
@@ -40,18 +42,7 @@ type AuthMethod = {
     type: 'publickey'
     name: string
     contents: Buffer
-} | ({
-    type: 'agent',
-    publicKey?: russh.SshPublicKey
-} & ({
-    kind: 'unix-socket',
-    path: string
-} | {
-    kind: 'named-pipe',
-    path: string
-} | {
-    kind: 'pageant',
-}))
+} | AgentAuthMethod
 
 function sshAuthTypeForMethod (m: AuthMethod): string {
     switch (m.type) {
@@ -168,43 +159,23 @@ export class SSHSession {
             if (!spec) {
                 // getAgentConnectionSpec() already emitted a detailed reason.
             } else {
-                // If user configured specific private keys, try to load their corresponding
-                // .pub files and use them first for agent-identity authentication
-                if (this.profile.options.privateKeys.length) {
-                    for (let pk of this.profile.options.privateKeys) {
-                        pk = pk.replace('%h', this.profile.options.host)
-                        pk = pk.replace('%r', this.profile.options.user)
-
-                        // Try to load as public key file
-                        let pubKeyPath = pk
-                        if (!pk.endsWith('.pub')) {
-                            pubKeyPath = pk + '.pub'
-                        }
-
+                this.allAuthMethods.push(...await getAgentAuthMethods(this.profile.options, spec, {
+                    parsePublicKey: contents => russh.parsePublicKey(contents),
+                    getIdentities: async () => {
+                        const agent = await russh.SSHAgentStream.connect(spec)
                         try {
-                            const pubKeyContent = await this.fileProviders.retrieveFile(pubKeyPath)
-                            const publicKey = russh.parsePublicKey(pubKeyContent.toString('utf-8'))
-                            this.allAuthMethods.push({
-                                type: 'agent',
-                                ...spec,
-                                publicKey,
-                            } as AuthMethod)
-                            this.emitServiceMessage(`Loaded public key for agent auth: ${pubKeyPath}`)
-                        } catch (error) {
-                            // Not a public key file or doesn't exist, skip
-                            this.emitServiceMessage(
-                                `Could not load public key for agent auth from ${pubKeyPath}: ${error}. ` +
-                                `Agent-identity authentication will not be attempted for this key.`,
-                            )
+                            return await requestAgentIdentities(agent)
+                        } finally {
+                            try {
+                                await agent.close()
+                            } catch {
+                                // The stream may already have closed while listing identities.
+                            }
                         }
-                    }
-                }
-
-                // Always add fallback agent auth that tries all keys
-                this.allAuthMethods.push({
-                    type: 'agent',
-                    ...spec,
-                })
+                    },
+                    readFile: path => this.fileProviders.retrieveFile(path),
+                    emitMessage: message => this.emitServiceMessage(message),
+                }))
             }
         }
 

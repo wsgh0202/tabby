@@ -2,6 +2,26 @@ msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 
+#: tabby-ssh/src/components/sshProfileSettings.component.pug
+msgid "Agent key name"
+msgstr ""
+
+#: tabby-ssh/src/components/sshProfileSettings.component.pug
+msgid "Agent public key"
+msgstr ""
+
+#: tabby-ssh/src/components/sshProfileSettings.component.pug
+msgid "Leave both fields empty to keep the default SSH agent behavior."
+msgstr ""
+
+#: tabby-ssh/src/components/sshProfileSettings.component.pug
+msgid "Match the key name (comment) reported by the SSH agent exactly."
+msgstr ""
+
+#: tabby-ssh/src/components/sshProfileSettings.component.pug
+msgid "Paste an OpenSSH public key. This takes precedence over the key name when both are set."
+msgstr ""
+
 #: tabby-local/src/components/terminalTab.component.ts:113
 msgid "\"{command}\" is still running. Close?"
 msgstr ""
