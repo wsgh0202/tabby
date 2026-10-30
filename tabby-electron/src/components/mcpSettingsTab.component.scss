@@ -18,8 +18,15 @@
 
 .section-heading { margin-bottom: 1rem; }
 
+.port-line {
+    flex-wrap: wrap;
+
+    .header { flex: 1 1 16rem; }
+}
+
 .port-input {
     width: 13rem;
+    max-width: 100%;
     flex-shrink: 0;
 
     input { min-width: 0; }

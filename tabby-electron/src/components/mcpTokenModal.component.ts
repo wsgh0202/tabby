@@ -47,7 +47,9 @@ export class MCPTokenModalComponent implements OnInit {
     }
 
     get displayName (): string|null {
-        return this.name.trim() ? this.name.trim() : this.token ? getMCPTokenLabel({ ...this.token, name: '' }) : null
+        const name = this.name.trim()
+        if (name) { return name }
+        return this.token ? getMCPTokenLabel({ ...this.token, name: '' }) : null
     }
 
     get dirty (): boolean {
