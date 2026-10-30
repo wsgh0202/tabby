@@ -12,6 +12,26 @@ msgstr ""
 "Language: zh_CN\n"
 "PO-Revision-Date: 2025-01-22 22:02\n"
 
+#: tabby-ssh/src/components/sshProfileSettings.component.pug
+msgid "Agent key name"
+msgstr "代理密钥名称"
+
+#: tabby-ssh/src/components/sshProfileSettings.component.pug
+msgid "Agent public key"
+msgstr "代理公钥"
+
+#: tabby-ssh/src/components/sshProfileSettings.component.pug
+msgid "Leave both fields empty to keep the default SSH agent behavior."
+msgstr "将这两个字段留空以使用 SSH 代理的默认行为。"
+
+#: tabby-ssh/src/components/sshProfileSettings.component.pug
+msgid "Match the key name (comment) reported by the SSH agent exactly."
+msgstr "精确匹配 SSH 代理提供的密钥名称（注释）。"
+
+#: tabby-ssh/src/components/sshProfileSettings.component.pug
+msgid "Paste an OpenSSH public key. This takes precedence over the key name when both are set."
+msgstr "粘贴 OpenSSH 公钥。同时设置公钥和密钥名称时，优先使用公钥。"
+
 #: tabby-local/src/components/terminalTab.component.ts:113
 msgid "\"{command}\" is still running. Close?"
 msgstr "\"{command}\" 仍在运行。是否需要关闭？"
