@@ -175,3 +175,21 @@ test('created, edited and revoked tokens affect authenticated HTTP requests', as
         assert.equal(secrets.length, 0)
     } finally { await cleanup() }
 })
+
+test('token display names are optional and roll back with permission changes on save failure', async () => {
+    const { service, config, cleanup } = setup()
+    try {
+        await service.createToken('', newMCPPermissions())
+        const original = config.store.mcp.tokens[0]
+        await service.updateToken(original.id, newMCPPermissions(), ' Renamed ')
+        assert.equal(config.store.mcp.tokens[0].name, 'Renamed')
+        assert.equal(config.store.mcp.tokens[0].preview, original.preview)
+        config.fail = true
+        await assert.rejects(service.updateToken(original.id, newMCPPermissions(), ''), /Save failed/)
+        assert.equal(config.store.mcp.tokens[0].name, 'Renamed')
+        config.fail = false
+        await service.updateToken(original.id, newMCPPermissions(), '')
+        assert.equal(config.store.mcp.tokens[0].name, '')
+        assert.equal(config.store.mcp.tokens[0].preview, original.preview)
+    } finally { await cleanup() }
+})

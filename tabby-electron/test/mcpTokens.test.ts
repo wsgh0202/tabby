@@ -3,6 +3,7 @@ import { test } from 'node:test'
 import type { VaultSecret } from 'tabby-core'
 import { MCPTokens, MCPToken, hashMCPToken, MCP_TOKEN_ID_PREFIX } from '../src/mcp/tokens'
 import { newMCPPermissions } from '../src/mcp/access'
+import { getMCPTokenLabel, previewMCPToken } from '../src/mcp/tokenDisplay'
 
 function setup () {
     const secrets: VaultSecret[] = []
@@ -63,7 +64,6 @@ test('locked or disabled vaults reject requests without prompting', async () => 
     assert.equal(await tokens.authenticate(created.token), null)
     assert.equal(state.loads, 0)
     await assert.rejects(tokens.create('Another', newMCPPermissions()), /vault/)
-    await assert.rejects(tokens.create('  ', newMCPPermissions()), /name/)
 })
 
 test('invalid stored hashes fail closed', async () => {
@@ -72,4 +72,24 @@ test('invalid stored hashes fail closed', async () => {
     entries.push(created.entry)
     secrets[0].value = 'invalid'
     assert.equal(await tokens.authenticate(created.token), null)
+})
+
+test('unnamed tokens use a non-authenticating preview without storing the bearer token', async () => {
+    const { tokens, entries, secrets } = setup()
+    const created = await tokens.create('  ', newMCPPermissions())
+    entries.push(created.entry)
+    assert.equal(created.entry.name, '')
+    assert.equal(created.entry.preview, `${created.token.slice(0, 8)}…${created.token.slice(-4)}`)
+    assert.equal(getMCPTokenLabel(created.entry), created.entry.preview)
+    assert.equal(secrets[0].key['description'], `MCP token: ${created.entry.preview}`)
+    assert.ok(!JSON.stringify({ entries, secrets }).includes(created.token))
+    assert.equal(await tokens.authenticate(created.entry.preview!), null)
+    assert.equal(await tokens.authenticate(created.token), created.entry)
+})
+
+test('display labels support named legacy entries and unnamed previews', () => {
+    const legacy = { ...newMCPPermissions(), id: 'mcp:token:1234567890abcdef', name: 'Existing agent' }
+    assert.equal(getMCPTokenLabel(legacy), 'Existing agent')
+    assert.equal(getMCPTokenLabel({ ...legacy, name: '' }), '12345678…cdef')
+    assert.equal(previewMCPToken('1234567890abcdef'), '12345678…cdef')
 })

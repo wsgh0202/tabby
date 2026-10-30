@@ -4,9 +4,12 @@ The desktop app includes a Model Context Protocol (MCP) server using the officia
 TypeScript SDK and Streamable HTTP. Open **Settings → MCP** to configure it.
 
 1. Configure a master passphrase in **Settings → Vault** if you have not already.
-2. In **MCP**, create a named token and select its tools, groups and connections.
+2. In **MCP**, create a token and select its tools, groups and connections. A name
+   is optional; unnamed tokens are displayed using their first eight and last
+   four characters, with the middle omitted.
 3. Copy the token before dismissing the result. The original token is shown once;
-   Tabby only stores its SHA-256 hash in the encrypted vault.
+   Tabby stores its SHA-256 hash in the encrypted vault and a shortened display
+   preview in configuration. The preview cannot be used to authenticate.
 4. Enable the server and copy the running address. Leave the port empty for an
    automatic port, or enter a port from 1 to 65535 and click **Apply**.
 5. Configure your agent to use Streamable HTTP with the copied address and an

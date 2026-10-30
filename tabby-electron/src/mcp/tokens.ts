@@ -2,6 +2,7 @@ import { marker as _ } from '@biesbjerg/ngx-translate-extract-marker'
 import { createHash, randomBytes, timingSafeEqual } from 'crypto'
 import type { Vault, VaultSecret } from 'tabby-core'
 import { MCPPermissions, validateMCPPermissions } from './access'
+import { getMCPTokenLabel, previewMCPToken } from './tokenDisplay'
 
 export const MCP_TOKEN_TYPE = 'custom:password'
 export const MCP_TOKEN_ID_PREFIX = 'mcp:token:'
@@ -10,6 +11,7 @@ export const MCP_TOKEN_DESCRIPTION_PREFIX = 'MCP token: '
 export interface MCPToken extends MCPPermissions {
     id: string
     name: string
+    preview?: string
 }
 
 export interface MCPTokenVault {
@@ -30,9 +32,6 @@ export class MCPTokens {
 
     async create (name: string, permissions: MCPPermissions): Promise<{ token: string, entry: MCPToken }> {
         name = name.trim()
-        if (!name) {
-            throw new Error(_('Token name is required'))
-        }
         validateMCPPermissions(permissions)
         if (!this.vault.isEnabled()) {
             throw new Error(_('Configure the vault before creating an MCP token'))
@@ -40,12 +39,13 @@ export class MCPTokens {
         const token = randomBytes(32).toString('hex')
         const hash = hashMCPToken(token)
         const id = `${MCP_TOKEN_ID_PREFIX}${hash}`
+        const entry: MCPToken = { ...JSON.parse(JSON.stringify(permissions)), id, name, preview: previewMCPToken(token) }
         await this.vault.addSecret({
             type: MCP_TOKEN_TYPE,
-            key: { id, description: `${MCP_TOKEN_DESCRIPTION_PREFIX}${name}` },
+            key: { id, description: `${MCP_TOKEN_DESCRIPTION_PREFIX}${getMCPTokenLabel(entry)}` },
             value: hash,
         })
-        return { token, entry: { ...JSON.parse(JSON.stringify(permissions)), id, name } }
+        return { token, entry }
     }
 
     async remove (id: string): Promise<void> {

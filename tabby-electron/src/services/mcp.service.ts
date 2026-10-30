@@ -122,14 +122,18 @@ export class MCPService {
         })
     }
 
-    async updateToken (id: string, permissions: MCPPermissions): Promise<void> {
+    async updateToken (id: string, permissions: MCPPermissions, name?: string): Promise<void> {
         return this.mutateTokens(async () => {
             validateMCPPermissions(permissions)
             const previous = this.settings.tokens
             if (!previous.some(token => token.id === id)) {
                 throw new Error(_('MCP token no longer exists'))
             }
-            this.settings.tokens = previous.map(token => token.id === id ? { ...token, ...JSON.parse(JSON.stringify(permissions)) } : token)
+            this.settings.tokens = previous.map(token => token.id === id ? {
+                ...token,
+                ...JSON.parse(JSON.stringify(permissions)),
+                name: name === undefined ? token.name : name.trim(),
+            } : token)
             try {
                 await this.config.save()
             } catch (error) {
