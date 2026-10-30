@@ -22,6 +22,7 @@ import { DockMenuService } from './services/dockMenu.service'
 import { ElectronUACService } from './services/uac.service'
 import { MCPService } from './services/mcp.service'
 import { MCPSettingsTabComponent } from './components/mcpSettingsTab.component'
+import { MCPTokenModalComponent } from './components/mcpTokenModal.component'
 import { MCPSettingsTabProvider } from './mcpSettings'
 
 import { ElectronHotkeyProvider } from './hotkeys'
@@ -48,7 +49,7 @@ import { VSDevToolsProvider } from './shells/vs'
 
 @NgModule({
     imports: [CommonModule, FormsModule, TabbyCorePlugin],
-    declarations: [MCPSettingsTabComponent],
+    declarations: [MCPSettingsTabComponent, MCPTokenModalComponent],
     providers: [
         { provide: SettingsTabProvider, useClass: MCPSettingsTabProvider, multi: true },
         { provide: TerminalColorSchemeProvider, useClass: HyperColorSchemes, multi: true },

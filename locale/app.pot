@@ -1393,3 +1393,161 @@ msgstr ""
 #: tabby-terminal/src/hotkeys.ts:58
 msgid "Zoom out"
 msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Access permissions"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "All connections"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "All groups"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "By connection"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "By group"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Capabilities: {count} / {total}"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Choose what the agent can do."
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Continue editing"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Discard changes"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Discard unsaved changes?"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Each token has its own tool capabilities and access permissions."
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Edit token"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "General"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Granted by group"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Group and individual connection permissions are combined."
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Groups: {count}"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "If left empty, the token is displayed with its middle characters omitted."
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Includes all current and future connections. Empty groups still require a group grant."
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Individual connections: {count}"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "New token"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "No connections available."
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "No groups available."
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "No tokens yet."
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Optional"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Running"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Save changes"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Selected connections"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Selected groups"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Selected: {count} / {total}"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Server address"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Server configuration"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Stopped"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Token name"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.ts
+msgid "Token settings navigation"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Tool capabilities"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.ts
+msgid "View connection groups"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.ts
+msgid "View connections"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.ts
+msgid "View connections in a group"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "View details"
+msgstr ""

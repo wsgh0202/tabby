@@ -1,0 +1,126 @@
+:host {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - max(3.5rem, 38px * var(--spaciness, 1)) - 2rem);
+    min-height: 0;
+}
+
+.modal-header, .modal-footer, :host > .alert {
+    flex-shrink: 0;
+}
+
+.modal-header {
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.token-identity {
+    min-width: 0;
+    overflow-wrap: anywhere;
+
+    h3 { margin-top: .25rem !important; }
+}
+
+.token-layout {
+    display: grid;
+    grid-template-columns: 10rem minmax(0, 1fr);
+    min-height: 0;
+    flex: 1 1 auto;
+}
+
+.token-navigation {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1rem .5rem;
+    gap: .5rem;
+    background: var(--theme-bg-less);
+    overflow-y: auto;
+
+    .btn {
+        text-align: left;
+        white-space: normal;
+    }
+}
+
+.token-form-page {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    padding: 0 1.5rem;
+}
+
+section {
+    padding: 1.5rem 0;
+
+    + section { border-top: 1px solid var(--theme-bg-more-2); }
+}
+
+.section-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: .5rem;
+    margin-bottom: .5rem;
+}
+
+.permission-row {
+    display: flex;
+    align-items: flex-start;
+    gap: .75rem;
+    padding: .75rem 0;
+    margin: 0;
+    overflow-wrap: anywhere;
+
+    + .permission-row { border-top: 1px solid var(--theme-bg-more-2); }
+    .form-check-input { flex-shrink: 0; }
+}
+
+.permission-copy {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    gap: .25rem;
+}
+
+.scope-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 1rem;
+}
+
+.scope-panel {
+    border: 1px solid var(--theme-bg-more-2);
+    border-radius: .375rem;
+    min-width: 0;
+}
+
+.scope-heading {
+    padding: .75rem;
+    margin: 0;
+    background: var(--theme-bg-less);
+}
+
+.scope-body { padding: .75rem; }
+
+@media (max-width: 991px) {
+    .scope-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 575px) {
+    .token-layout {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto minmax(0, 1fr);
+    }
+
+    .token-navigation {
+        flex-direction: row;
+        flex-wrap: wrap;
+        padding: .5rem;
+    }
+
+    .token-form-page { padding: 0 1rem; }
+}

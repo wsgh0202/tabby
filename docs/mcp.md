@@ -49,6 +49,12 @@ Every `tools/list` request reflects current grants, and every call checks the gr
 again. Clients should refresh their tool list after changing permissions. There are
 no persistent MCP sessions.
 
+Token details open in a window-bounded dialog. **General**, **Tool capabilities**,
+and **Access permissions** in the sidebar locate sections of the same scrolling
+form. Capability labels describe the operations in the current UI language; the
+protocol tool identifiers below remain unchanged. Closing a modified draft asks
+whether to discard it, and a failed save keeps the draft open for retrying.
+
 | Tool | Arguments | Returns |
 | --- | --- | --- |
 | `list_connection_groups` | None | Accessible groups: `id`, `name` |
@@ -77,7 +83,8 @@ and inaccessible group IDs both return an error.
 
 Each credential is a `custom:password` secret with an ID of
 `mcp:token:<SHA-256 hash>` and a description of `MCP token: <name>`. Its value is
-the token hash. Token names and access policies are stored in Tabby's configuration;
+the token hash. The description records the creation label (name or shortened
+token). Display names and access policies are stored in Tabby's configuration;
 the credential must also exist in the vault for authentication to succeed.
 
 Requests received while the vault is locked are rejected without opening an unlock

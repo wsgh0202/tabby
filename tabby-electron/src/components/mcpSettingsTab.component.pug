@@ -1,80 +1,62 @@
 h3 MCP
-p(translate) Allow agents to discover Tabby connections through Model Context Protocol.
+p.text-muted.mb-4(translate) Allow agents to discover Tabby connections through Model Context Protocol.
 
-.form-line
-    .header
-        .title(translate) Enable MCP server
-        .description(translate) Listen on this computer only. Requests require a bearer token and an unlocked vault.
-    toggle([ngModel]='mcp.settings.enabled', (ngModelChange)='saveSettings($event)', [disabled]='busy')
+section.mcp-section
+    .section-heading
+        h4.mb-0(translate) Server configuration
+        span.text-success(*ngIf='mcp.address', translate) Running
+        span.text-muted(*ngIf='!mcp.address', translate) Stopped
+    .form-line
+        .header
+            .title(translate) Enable MCP server
+            .description(translate) Listen on this computer only. Requests require a bearer token and an unlocked vault.
+        toggle([ngModel]='mcp.settings.enabled', (ngModelChange)='saveSettings($event)', [disabled]='busy')
+    .form-line.port-line
+        .header
+            label.title(for='mcp-port', translate) Port
+            .description(translate) Leave empty to reuse the previous automatic port, or choose a free port automatically.
+        .port-input
+            input#mcp-port.form-control(type='number', min='1', max='65535', [(ngModel)]='port', [disabled]='busy')
+            button.btn.btn-secondary(type='button', (click)='saveSettings()', [disabled]='busy', translate) Apply
+    .server-address
+        .address-copy
+            span(translate) Server address
+            code {{mcp.address || previewAddress}}
+        button.btn.btn-secondary(type='button', (click)='copy(mcp.address!)', *ngIf='mcp.address', translate) Copy
+    p.text-muted.mb-0.mt-2(*ngIf='!mcp.address && !mcp.error', translate) Server is stopped or managed by the main window.
 
-.form-line
-    .header
-        label.title(for='mcp-port', translate) Port
-        .description(translate) Leave empty to reuse the previous automatic port, or choose a free port automatically.
-    input#mcp-port.form-control(type='number', min='1', max='65535', [(ngModel)]='port', [disabled]='busy')
-    button.btn.btn-secondary.ms-2((click)='saveSettings()', [disabled]='busy', translate) Apply
-
-.mb-3
-    div {{previewAddress}}
-    div(*ngIf='mcp.address')
-        span(translate) Running at:
-        code.ms-2 {{mcp.address}}
-        button.btn.btn-sm.btn-secondary.ms-2((click)='copy(mcp.address!)', translate) Copy
-    .text-muted(*ngIf='!mcp.address && !mcp.error', translate) Server is stopped or managed by the main window.
-.alert.alert-danger(*ngIf='mcp.error') {{mcp.error | translate}}
-.alert.alert-danger(*ngIf='error') {{error | translate}}
+.alert.alert-danger(*ngIf='mcp.error', role='alert') {{mcp.error | translate}}
+.alert.alert-danger(*ngIf='error', role='alert') {{error | translate}}
 .alert.alert-info(*ngIf='!mcp.isMainWindow', translate) MCP runs in the main window. Unlock the vault in that window before connecting an agent.
-
 .alert.alert-info(*ngIf='!vault.isEnabled()', translate) Configure the vault in Vault settings before creating tokens.
 .alert.alert-info(*ngIf='vault.isEnabled() && !vault.isOpen()')
     p(translate) Unlock the vault to allow MCP requests. Requests are rejected while it is locked.
-    button.btn.btn-secondary((click)='unlockVault()', [disabled]='busy || !mcp.isMainWindow', translate) Unlock vault
+    button.btn.btn-secondary(type='button', (click)='unlockVault()', [disabled]='busy || !mcp.isMainWindow', translate) Unlock vault
 
-h4(translate) Tokens
-p(translate) Use Authorization: Bearer TOKEN when connecting an agent. Each token has its own tools and connection access.
-.list-group.mb-3
-    .list-group-item.d-flex.align-items-center(*ngFor='let token of mcp.settings.tokens')
-        span.me-auto {{token.name}}
-        button.btn.btn-secondary.ms-2((click)='openEditor(token)', [disabled]='busy || !!createdToken', translate) Edit permissions
-        button.btn.btn-danger.ms-2((click)='removeToken(token)', [disabled]='busy', translate) Revoke
-button.btn.btn-primary.mb-3((click)='openEditor()', [disabled]='busy || !vault.isEnabled() || !!createdToken', translate) Create token
-
-.alert.alert-warning(*ngIf='createdToken')
-    p(translate) Copy this token now. It will only be shown once.
-    code.d-block.text-break {{createdToken}}
-    button.btn.btn-secondary.mt-2((click)='copy(createdToken!)', translate) Copy token
-    button.btn.btn-primary.mt-2.ms-2((click)='createdToken = null', translate) Done
-
-fieldset(*ngIf='editorOpen', [disabled]='busy')
-    legend(translate) Token permissions
-    label.form-label(for='mcp-token-name', translate) Name
-    input#mcp-token-name.form-control.mb-3([(ngModel)]='name', [disabled]='!!editing', maxlength='200')
-
-    h5(translate) Available tools
-    label.d-block(*ngFor='let tool of tools')
-        input.form-check-input.me-2(type='checkbox', [ngModel]='permissions.tools.includes(tool.name)', (ngModelChange)='toggleSelection(permissions.tools, tool.name, $event)')
-        span {{tool.name}}
-        small.text-muted.ms-2 {{tool.description | translate}}
-
-    h5.mt-3(translate) Available groups
-    select.form-select.mb-2([(ngModel)]='permissions.groups.mode', [attr.aria-label]='"Available groups" | translate')
-        option(value='all', translate) All
-        option(value='custom', translate) Custom
-    p.text-muted(translate) Selecting a group grants all its current and future connections. Subgroups are selected separately.
-    div(*ngIf='permissions.groups.mode === "custom"')
-        label.d-block(*ngFor='let group of catalog.groups')
-            input.form-check-input.me-2(type='checkbox', [ngModel]='permissions.groups.ids.includes(group.id)', (ngModelChange)='toggleSelection(permissions.groups.ids, group.id, $event)')
-            span {{group.name}}
-
-    h5.mt-3(translate) Available connections
-    select.form-select.mb-2([(ngModel)]='permissions.connections.mode', [attr.aria-label]='"Available connections" | translate')
-        option(value='all', translate) All
-        option(value='custom', translate) Custom
-    p.text-muted(translate) Individual selections grant only those connections. Their groups are visible, but other connections in those groups remain hidden.
-    div(*ngIf='permissions.connections.mode === "custom"')
-        label.d-block(*ngFor='let connection of catalog.connections')
-            input.form-check-input.me-2(type='checkbox', [ngModel]='permissions.connections.ids.includes(connection.id)', (ngModelChange)='toggleSelection(permissions.connections.ids, connection.id, $event)')
-            span {{connection.name}} ({{connection.type}})
-
-    button.btn.btn-primary.mt-3((click)='saveToken()', [disabled]='!name.trim()', translate) Save
-    button.btn.btn-secondary.mt-3.ms-2((click)='editorOpen = false', translate) Cancel
+section
+    .section-heading
+        .header
+            h4(translate) Tokens
+            p.text-muted.mb-0(translate) Each token has its own tool capabilities and access permissions.
+        button.btn.btn-primary(type='button', (click)='openEditor()', [disabled]='busy || editorOpen || !vault.isEnabled() || !!createdToken', translate) Create token
+    p.text-muted(translate) Use Authorization: Bearer TOKEN when connecting an agent. Each token has its own tools and connection access.
+    .alert.alert-warning(*ngIf='createdToken', role='status')
+        p(translate) Copy this token now. It will only be shown once.
+        code.d-block.text-break.selectable {{createdToken}}
+        button.btn.btn-secondary.mt-2(type='button', (click)='copy(createdToken!)', translate) Copy token
+        button.btn.btn-primary.mt-2.ms-2(type='button', (click)='createdToken = null', translate) Done
+    .mcp-section.token-list
+        p.text-muted.p-3.mb-0(*ngIf='!mcp.settings.tokens.length', translate) No tokens yet.
+        .token-row(*ngFor='let token of mcp.settings.tokens')
+            .token-details
+                .token-name {{tokenLabel(token)}}
+                code.text-muted(*ngIf='token.name && token.preview') {{token.preview}}
+                .token-summary.text-muted
+                    span(translate='Capabilities: {count} / {total}', [translateParams]='{count: token.tools.length, total: toolCount}')
+                    span(*ngIf='token.groups.mode === "all"', translate) All groups
+                    span(*ngIf='token.groups.mode === "custom"', translate='Groups: {count}', [translateParams]='{count: token.groups.ids.length}')
+                    span(*ngIf='token.connections.mode === "all"', translate) All connections
+                    span(*ngIf='token.connections.mode === "custom"', translate='Individual connections: {count}', [translateParams]='{count: token.connections.ids.length}')
+            .token-actions
+                button.btn.btn-secondary(type='button', (click)='openEditor(token)', [disabled]='busy || editorOpen || !!createdToken', translate) View details
+                button.btn.btn-danger(type='button', (click)='removeToken(token)', [disabled]='busy || editorOpen', translate) Revoke

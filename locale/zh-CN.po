@@ -2727,3 +2727,153 @@ msgstr "缩小"
 msgctxt "[Dynamic] port forwarding"
 msgid "id.port-forwarding.dynamic"
 msgstr "动态端口转发"
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Access permissions"
+msgstr "访问权限"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "All connections"
+msgstr "所有连接"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "All groups"
+msgstr "所有分组"
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "By connection"
+msgstr "按连接授权"
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "By group"
+msgstr "按分组授权"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Capabilities: {count} / {total}"
+msgstr "能力：{count} / {total}"
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Choose what the agent can do."
+msgstr "选择智能体可以执行的操作。"
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Continue editing"
+msgstr "继续编辑"
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Discard changes"
+msgstr "放弃修改"
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Discard unsaved changes?"
+msgstr "是否放弃未保存的修改？"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Each token has its own tool capabilities and access permissions."
+msgstr "每个令牌都有独立的工具能力与访问权限。"
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Edit token"
+msgstr "编辑令牌"
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Granted by group"
+msgstr "已由分组授权"
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Group and individual connection permissions are combined."
+msgstr "按分组与按连接的授权叠加生效。"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Groups: {count}"
+msgstr "分组：{count}"
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "If left empty, the token is displayed with its middle characters omitted."
+msgstr "留空时，显示中间省略的令牌。"
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Includes all current and future connections. Empty groups still require a group grant."
+msgstr "包含当前及未来新增的所有连接。空分组仍需单独授权。"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Individual connections: {count}"
+msgstr "单独连接：{count}"
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "New token"
+msgstr "新令牌"
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "No connections available."
+msgstr "没有可用连接。"
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "No groups available."
+msgstr "没有可用分组。"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "No tokens yet."
+msgstr "尚无令牌。"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Running"
+msgstr "运行中"
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Save changes"
+msgstr "保存修改"
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Selected connections"
+msgstr "指定连接"
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Selected groups"
+msgstr "指定分组"
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Selected: {count} / {total}"
+msgstr "已选择：{count} / {total}"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Server address"
+msgstr "服务地址"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Server configuration"
+msgstr "服务配置"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Stopped"
+msgstr "已停止"
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Token name"
+msgstr "令牌名称"
+
+#: tabby-electron/src/components/mcpTokenModal.component.ts
+msgid "Token settings navigation"
+msgstr "令牌配置定位导航"
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Tool capabilities"
+msgstr "工具能力"
+
+#: tabby-electron/src/components/mcpTokenModal.component.ts
+msgid "View connection groups"
+msgstr "查看连接分组"
+
+#: tabby-electron/src/components/mcpTokenModal.component.ts
+msgid "View connections"
+msgstr "查看连接"
+
+#: tabby-electron/src/components/mcpTokenModal.component.ts
+msgid "View connections in a group"
+msgstr "查看分组内连接"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "View details"
+msgstr "查看详情"

@@ -1,42 +1,44 @@
 import { marker as _ } from '@biesbjerg/ngx-translate-extract-marker'
-import { Component, HostBinding, OnDestroy, OnInit } from '@angular/core'
+import { Component, HostBinding, OnDestroy } from '@angular/core'
+import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap'
 import { ConfigService, PlatformService, VaultService } from 'tabby-core'
-import { MCPCatalog, MCPPermissions, MCP_TOOLS, newMCPPermissions } from '../mcp/access'
+import { MCP_TOOLS } from '../mcp/access'
 import { MCPToken } from '../mcp/tokens'
 import { MCPService } from '../services/mcp.service'
+import { getMCPTokenLabel } from '../mcp/tokenDisplay'
+import { MCPTokenModalComponent } from './mcpTokenModal.component'
 
 /** @hidden */
 @Component({
     selector: 'mcp-settings-tab',
     templateUrl: './mcpSettingsTab.component.pug',
+    styleUrls: ['./mcpSettingsTab.component.scss'],
 })
-export class MCPSettingsTabComponent implements OnInit, OnDestroy {
+export class MCPSettingsTabComponent implements OnDestroy {
     @HostBinding('class.content-box') contentBox = true
-    tools = MCP_TOOLS
-    catalog: MCPCatalog = { groups: [], connections: [] }
+    toolCount = MCP_TOOLS.length
+    tokenLabel = getMCPTokenLabel
     port: number|null
-    name = ''
-    permissions: MCPPermissions = newMCPPermissions()
-    editing: string|null = null
     editorOpen = false
     createdToken: string|null = null
     error: string|null = null
     busy = false
+    private editorModal: NgbModalRef|null = null
+    private destroyed = false
 
     constructor (
         public mcp: MCPService,
         public vault: VaultService,
         private config: ConfigService,
         private platform: PlatformService,
+        private ngbModal: NgbModal,
     ) {
         this.port = mcp.settings.port
     }
 
-    async ngOnInit (): Promise<void> {
-        await this.run(async () => { this.catalog = await this.mcp.getCatalog() })
-    }
-
     ngOnDestroy (): void {
+        this.destroyed = true
+        this.editorModal?.close(null)
         this.createdToken = null
     }
 
@@ -65,23 +67,27 @@ export class MCPSettingsTabComponent implements OnInit, OnDestroy {
     }
 
     async openEditor (token?: MCPToken): Promise<void> {
+        if (this.busy || this.editorOpen || this.createdToken) { return }
         await this.run(async () => {
-            this.catalog = await this.mcp.getCatalog()
-            this.editing = token?.id ?? null
-            this.name = token?.name ?? ''
-            this.permissions = token ? JSON.parse(JSON.stringify({ tools: token.tools, connections: token.connections, groups: token.groups })) : newMCPPermissions()
+            const catalog = await this.mcp.getCatalog()
+            if (this.destroyed) { return }
+            const modal = this.ngbModal.open(MCPTokenModalComponent, {
+                size: 'xl',
+                backdrop: 'static',
+                ariaLabelledBy: 'mcp-token-title',
+                beforeDismiss: () => (modal.componentInstance as MCPTokenModalComponent).canDismiss(),
+            })
+            const editor = modal.componentInstance as MCPTokenModalComponent
+            editor.token = token
+            editor.catalog = catalog
+            this.editorModal = modal
             this.editorOpen = true
-        })
-    }
-
-    async saveToken (): Promise<void> {
-        await this.run(async () => {
-            if (this.editing) {
-                await this.mcp.updateToken(this.editing, this.permissions)
-            } else {
-                this.createdToken = await this.mcp.createToken(this.name, this.permissions)
-            }
-            this.editorOpen = false
+            modal.result.then((created: string|null) => {
+                if (!this.destroyed) { this.createdToken = created }
+            }).catch(() => null).finally(() => {
+                this.editorModal = null
+                this.editorOpen = false
+            })
         })
     }
 
@@ -95,15 +101,6 @@ export class MCPSettingsTabComponent implements OnInit, OnDestroy {
 
     copy (text: string): void {
         this.platform.setClipboard({ text })
-    }
-
-    toggleSelection (items: string[], id: string, selected: boolean): void {
-        const index = items.indexOf(id)
-        if (selected && index === -1) {
-            items.push(id)
-        } else if (!selected && index !== -1) {
-            items.splice(index, 1)
-        }
     }
 
     private async run (action: () => Promise<void>): Promise<void> {
