@@ -1,3 +1,5 @@
+import { marker as _ } from '@biesbjerg/ngx-translate-extract-marker'
+
 /** Public MCP records deliberately omit profile options, defaults and credentials. */
 export interface MCPConnection {
     id: string
@@ -17,9 +19,9 @@ export interface MCPCatalog {
 }
 
 export const MCP_TOOLS = [
-    { name: 'list_connection_groups', description: 'List accessible connection groups.' },
-    { name: 'list_connections', description: 'List all accessible connections.' },
-    { name: 'list_group_connections', description: 'List accessible connections in a group.' },
+    { name: 'list_connection_groups', description: _('List accessible connection groups.') },
+    { name: 'list_connections', description: _('List all accessible connections.') },
+    { name: 'list_group_connections', description: _('List accessible connections in a group.') },
 ] as const
 
 export interface MCPPermissions {
@@ -38,11 +40,11 @@ export function newMCPPermissions (): MCPPermissions {
 
 export function validateMCPPermissions (permissions: MCPPermissions): void {
     if (!Array.isArray(permissions.tools) || permissions.tools.some(name => !MCP_TOOLS.some(tool => tool.name === name))) {
-        throw new Error('Unknown MCP tool')
+        throw new Error(_('Unknown MCP tool'))
     }
     for (const scope of [permissions.connections, permissions.groups]) {
         if (!['all', 'custom'].includes(scope.mode) || !Array.isArray(scope.ids) || scope.ids.some(id => typeof id !== 'string')) {
-            throw new Error('Invalid MCP access scope')
+            throw new Error(_('Invalid MCP access scope'))
         }
     }
 }

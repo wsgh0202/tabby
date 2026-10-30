@@ -1,3 +1,4 @@
+import { marker as _ } from '@biesbjerg/ngx-translate-extract-marker'
 import { Component, HostBinding, OnDestroy, OnInit } from '@angular/core'
 import { ConfigService, PlatformService, VaultService } from 'tabby-core'
 import { MCPCatalog, MCPPermissions, MCP_TOOLS, newMCPPermissions } from '../mcp/access'
@@ -48,7 +49,7 @@ export class MCPSettingsTabComponent implements OnInit, OnDestroy {
         await this.run(async () => {
             const validPort = this.port === null || (Number.isInteger(this.port) && this.port >= 1 && this.port <= 65535)
             if (enabled && !validPort) {
-                throw new Error('MCP port must be between 1 and 65535')
+                throw new Error(_('MCP port must be between 1 and 65535'))
             }
             const previous = { enabled: this.mcp.settings.enabled, port: this.mcp.settings.port }
             this.mcp.settings.enabled = enabled

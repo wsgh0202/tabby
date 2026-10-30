@@ -1,3 +1,175 @@
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "All"
+msgstr "All"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Allow agents to discover Tabby connections through Model Context Protocol."
+msgstr "Allow agents to discover Tabby connections through Model Context Protocol."
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Apply"
+msgstr "Apply"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Available connections"
+msgstr "Available connections"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Available groups"
+msgstr "Available groups"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Available tools"
+msgstr "Available tools"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Cancel"
+msgstr "Cancel"
+
+#: tabby-electron/src/mcp/tokens.ts
+msgid "Configure the vault before creating an MCP token"
+msgstr "Configure the vault before creating an MCP token"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Configure the vault in Vault settings before creating tokens."
+msgstr "Configure the vault in Vault settings before creating tokens."
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Copy"
+msgstr "Copy"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Copy this token now. It will only be shown once."
+msgstr "Copy this token now. It will only be shown once."
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Copy token"
+msgstr "Copy token"
+
+#: tabby-electron/src/services/mcp.service.ts
+msgid "Could not start MCP server"
+msgstr "Could not start MCP server"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Create token"
+msgstr "Create token"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Custom"
+msgstr "Custom"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Done"
+msgstr "Done"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Edit permissions"
+msgstr "Edit permissions"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Enable MCP server"
+msgstr "Enable MCP server"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Individual selections grant only those connections. Their groups are visible, but other connections in those groups remain hidden."
+msgstr "Individual selections grant only those connections. Their groups are visible, but other connections in those groups remain hidden."
+
+#: tabby-electron/src/mcp/access.ts
+msgid "Invalid MCP access scope"
+msgstr "Invalid MCP access scope"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Leave empty to reuse the previous automatic port, or choose a free port automatically."
+msgstr "Leave empty to reuse the previous automatic port, or choose a free port automatically."
+
+#: tabby-electron/src/mcp/access.ts
+msgid "List accessible connection groups."
+msgstr "List accessible connection groups."
+
+#: tabby-electron/src/mcp/access.ts
+msgid "List accessible connections in a group."
+msgstr "List accessible connections in a group."
+
+#: tabby-electron/src/mcp/access.ts
+msgid "List all accessible connections."
+msgstr "List all accessible connections."
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Listen on this computer only. Requests require a bearer token and an unlocked vault."
+msgstr "Listen on this computer only. Requests require a bearer token and an unlocked vault."
+
+#: tabby-electron/src/services/mcp.service.ts
+msgid "MCP port is already in use"
+msgstr "MCP port is already in use"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.ts
+msgid "MCP port must be between 1 and 65535"
+msgstr "MCP port must be between 1 and 65535"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "MCP runs in the main window. Unlock the vault in that window before connecting an agent."
+msgstr "MCP runs in the main window. Unlock the vault in that window before connecting an agent."
+
+#: tabby-electron/src/services/mcp.service.ts
+msgid "MCP token no longer exists"
+msgstr "MCP token no longer exists"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Name"
+msgstr "Name"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Port"
+msgstr "Port"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Revoke"
+msgstr "Revoke"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Running at:"
+msgstr "Running at:"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Save"
+msgstr "Save"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Selecting a group grants all its current and future connections. Subgroups are selected separately."
+msgstr "Selecting a group grants all its current and future connections. Subgroups are selected separately."
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Server is stopped or managed by the main window."
+msgstr "Server is stopped or managed by the main window."
+
+#: tabby-electron/src/mcp/tokens.ts
+msgid "Token name is required"
+msgstr "Token name is required"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Token permissions"
+msgstr "Token permissions"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Tokens"
+msgstr "Tokens"
+
+#: tabby-electron/src/mcp/access.ts
+msgid "Unknown MCP tool"
+msgstr "Unknown MCP tool"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Unlock the vault to allow MCP requests. Requests are rejected while it is locked."
+msgstr "Unlock the vault to allow MCP requests. Requests are rejected while it is locked."
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Unlock vault"
+msgstr "Unlock vault"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Use Authorization: Bearer TOKEN when connecting an agent. Each token has its own tools and connection access."
+msgstr "Use Authorization: Bearer TOKEN when connecting an agent. Each token has its own tools and connection access."
+
 msgid "id.port-forwarding.dynamic"
 msgstr "Dynamic"
 

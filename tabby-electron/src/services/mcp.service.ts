@@ -1,3 +1,4 @@
+import { marker as _ } from '@biesbjerg/ngx-translate-extract-marker'
 import { Inject, Injectable } from '@angular/core'
 import { BOOTSTRAP_DATA, BootstrapData, ConfigService, ProfilesService, VaultService } from 'tabby-core'
 import { MCPCatalog, MCPPermissions, validateMCPPermissions } from '../mcp/access'
@@ -87,7 +88,7 @@ export class MCPService {
         }).catch(async error => {
             await this.server.stop()
             this.appliedSettings = null
-            this.error = error.code === 'EADDRINUSE' ? 'MCP port is already in use' : 'Could not start MCP server'
+            this.error = error.code === 'EADDRINUSE' ? _('MCP port is already in use') : _('Could not start MCP server')
         })
         return this.pending
     }
@@ -126,7 +127,7 @@ export class MCPService {
             validateMCPPermissions(permissions)
             const previous = this.settings.tokens
             if (!previous.some(token => token.id === id)) {
-                throw new Error('MCP token no longer exists')
+                throw new Error(_('MCP token no longer exists'))
             }
             this.settings.tokens = previous.map(token => token.id === id ? { ...token, ...JSON.parse(JSON.stringify(permissions)) } : token)
             try {

@@ -1,3 +1,4 @@
+import { marker as _ } from '@biesbjerg/ngx-translate-extract-marker'
 import { createHash, randomBytes, timingSafeEqual } from 'crypto'
 import type { Vault, VaultSecret } from 'tabby-core'
 import { MCPPermissions, validateMCPPermissions } from './access'
@@ -30,11 +31,11 @@ export class MCPTokens {
     async create (name: string, permissions: MCPPermissions): Promise<{ token: string, entry: MCPToken }> {
         name = name.trim()
         if (!name) {
-            throw new Error('Token name is required')
+            throw new Error(_('Token name is required'))
         }
         validateMCPPermissions(permissions)
         if (!this.vault.isEnabled()) {
-            throw new Error('Configure the vault before creating an MCP token')
+            throw new Error(_('Configure the vault before creating an MCP token'))
         }
         const token = randomBytes(32).toString('hex')
         const hash = hashMCPToken(token)

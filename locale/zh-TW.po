@@ -12,6 +12,154 @@ msgstr ""
 "Language: zh_TW\n"
 "PO-Revision-Date: 2025-01-22 22:02\n"
 
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "All"
+msgstr "全部"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Allow agents to discover Tabby connections through Model Context Protocol."
+msgstr "允許代理程式透過模型上下文協定（MCP）探索 Tabby 連線。"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Apply"
+msgstr "套用"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Available connections"
+msgstr "可用連線"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Available groups"
+msgstr "可用群組"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Available tools"
+msgstr "可用工具"
+
+#: tabby-electron/src/mcp/tokens.ts
+msgid "Configure the vault before creating an MCP token"
+msgstr "建立 MCP 權杖前，請先設定保險庫"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Configure the vault in Vault settings before creating tokens."
+msgstr "建立權杖前，請在保險庫設定中設定保險庫。"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Copy this token now. It will only be shown once."
+msgstr "請立即複製此權杖。它只會顯示一次。"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Copy token"
+msgstr "複製權杖"
+
+#: tabby-electron/src/services/mcp.service.ts
+msgid "Could not start MCP server"
+msgstr "無法啟動 MCP 伺服器"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Create token"
+msgstr "建立權杖"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Done"
+msgstr "完成"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Edit permissions"
+msgstr "編輯權限"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Enable MCP server"
+msgstr "啟用 MCP 伺服器"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Individual selections grant only those connections. Their groups are visible, but other connections in those groups remain hidden."
+msgstr "個別選取僅授予對所選連線的存取權限。這些連線所屬的群組可見，但群組中的其他連線仍會隱藏。"
+
+#: tabby-electron/src/mcp/access.ts
+msgid "Invalid MCP access scope"
+msgstr "無效的 MCP 存取範圍"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Leave empty to reuse the previous automatic port, or choose a free port automatically."
+msgstr "留空以重複使用上次自動分配的連接埠，或自動選擇可用的連接埠。"
+
+#: tabby-electron/src/mcp/access.ts
+msgid "List accessible connection groups."
+msgstr "列出可存取的連線群組。"
+
+#: tabby-electron/src/mcp/access.ts
+msgid "List accessible connections in a group."
+msgstr "列出群組中可存取的連線。"
+
+#: tabby-electron/src/mcp/access.ts
+msgid "List all accessible connections."
+msgstr "列出所有可存取的連線。"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Listen on this computer only. Requests require a bearer token and an unlocked vault."
+msgstr "僅監聽本機。請求需要 Bearer 權杖，且保險庫必須已解鎖。"
+
+#: tabby-electron/src/services/mcp.service.ts
+msgid "MCP port is already in use"
+msgstr "MCP 連接埠已被占用"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.ts
+msgid "MCP port must be between 1 and 65535"
+msgstr "MCP 連接埠必須介於 1 和 65535 之間"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "MCP runs in the main window. Unlock the vault in that window before connecting an agent."
+msgstr "MCP 在主視窗中執行。連接代理程式前，請在主視窗中解鎖保險庫。"
+
+#: tabby-electron/src/services/mcp.service.ts
+msgid "MCP token no longer exists"
+msgstr "MCP 權杖已不存在"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Revoke"
+msgstr "撤銷"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Running at:"
+msgstr "執行位址："
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Selecting a group grants all its current and future connections. Subgroups are selected separately."
+msgstr "選取群組後，將授予對該群組目前及未來所有連線的存取權限。子群組需要另外選取。"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Server is stopped or managed by the main window."
+msgstr "伺服器已停止，或由主視窗管理。"
+
+#: tabby-electron/src/mcp/tokens.ts
+msgid "Token name is required"
+msgstr "必須填寫權杖名稱"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Token permissions"
+msgstr "權杖權限"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Tokens"
+msgstr "權杖"
+
+#: tabby-electron/src/mcp/access.ts
+msgid "Unknown MCP tool"
+msgstr "未知的 MCP 工具"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Unlock the vault to allow MCP requests. Requests are rejected while it is locked."
+msgstr "解鎖保險庫以允許 MCP 請求。保險庫鎖定時，請求將被拒絕。"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Unlock vault"
+msgstr "解鎖保險庫"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Use Authorization: Bearer TOKEN when connecting an agent. Each token has its own tools and connection access."
+msgstr "連接代理程式時，請使用 Authorization: Bearer TOKEN。每個權杖都有獨立的工具和連線存取權限。"
+
 #: tabby-local/src/components/terminalTab.component.ts:113
 msgid "\"{command}\" is still running. Close?"
 msgstr "\"{command}\" 正在執行。是否結束？"
@@ -2571,4 +2719,3 @@ msgstr "縮小"
 msgctxt "[Dynamic] port forwarding"
 msgid "id.port-forwarding.dynamic"
 msgstr "動態通訊埠轉發"
-
