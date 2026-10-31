@@ -1,11 +1,14 @@
 import { createServer, IncomingMessage, Server as HTTPServer, ServerResponse } from 'http'
 import { Server, StreamableHTTPServerTransport, CallToolRequestSchema, ListToolsRequestSchema } from './sdk'
-import { callMCPTool, MCPCatalog, MCP_TOOLS } from './access'
+import { callMCPTool, canAccessConnection, MCPCatalog, MCPConnection, resolveMCPConnectionCapability } from './access'
+import { MCP_TOOLS, MCPToolError, validateMCPToolArguments } from './tools'
 import { MCPToken } from './tokens'
 
 export interface MCPServerOptions {
     authenticate: (token: string) => Promise<MCPToken|null>
     getCatalog: () => Promise<MCPCatalog>
+    callOperation?: (tokenId: string, connection: MCPConnection, name: string, args: Record<string, unknown>, authorize: () => Promise<boolean>) => Promise<unknown>
+    disposeOperations?: () => Promise<void>
 }
 
 /** Stateless SDK transports keep every request bound to its current bearer token. */
@@ -49,6 +52,7 @@ export class MCPHTTPServer {
                 http.closeAllConnections()
             })
         }
+        await this.options.disposeOperations?.()
     }
 
     private async listen (port: number): Promise<void> {
@@ -106,7 +110,8 @@ export class MCPHTTPServer {
             response.writeHead(401).end('Invalid token or locked vault')
             return
         }
-        // This server has no long-lived sessions or unsolicited streams.
+        // HTTP transports remain stateless. Owned terminal sessions use explicit
+        // IDs/cursors and bounded idle leases rather than transport lifetime.
         if (request.method !== 'POST') {
             response.setHeader('Allow', 'POST')
             response.writeHead(405).end()
@@ -116,27 +121,50 @@ export class MCPHTTPServer {
         server.setRequestHandler(ListToolsRequestSchema, async () => {
             const token = await authorize()
             if (!token) { throw new Error('Token access denied') }
+            const catalog = await this.options.getCatalog()
+            const current = await authorize()
+            if (!current) { throw new Error('Token access denied') }
             return {
-                tools: MCP_TOOLS.filter(tool => token.tools.includes(tool.name)).map(tool => ({
-                    ...tool,
-                    inputSchema: tool.name === 'list_group_connections'
-                        ? { type: 'object' as const, properties: { groupId: { type: 'string' } }, required: ['groupId'], additionalProperties: false }
-                        : { type: 'object' as const, properties: {}, additionalProperties: false },
-                    annotations: { readOnlyHint: true, openWorldHint: false },
-                })),
+                tools: MCP_TOOLS.filter(tool => current.capabilities.includes('connection_operations')
+                    && (!tool.capability || catalog.connections.some(connection => canAccessConnection(current, connection)
+                        && resolveMCPConnectionCapability(current, catalog, connection.id, tool.capability!))))
+                    .map(({ name, description, inputSchema, annotations }) => ({ name, description, inputSchema, annotations })),
             }
         })
         server.setRequestHandler(CallToolRequestSchema, async message => {
             try {
                 const initialToken = await authorize()
-                if (!initialToken?.tools.includes(message.params.name)) { throw new Error('Tool access denied') }
+                const definition = MCP_TOOLS.find(tool => tool.name === message.params.name)
+                if (!initialToken?.capabilities.includes('connection_operations') || !definition) { throw new Error('Tool access denied') }
+                const args = message.params.arguments ?? {}
+                validateMCPToolArguments(definition, args)
                 const catalog = await this.options.getCatalog()
                 const token = await authorize()
                 if (!token) { throw new Error('Token access denied') }
-                const result = callMCPTool(token, catalog, message.params.name, message.params.arguments ?? {})
+                let result: unknown = null
+                if (!definition.capability) {
+                    result = callMCPTool(token, catalog, definition.name, args)
+                } else {
+                    const connection = catalog.connections.find(item => item.id === args.connectionId)
+                    if (!connection || !this.options.callOperation) { throw new Error('Connection access denied') }
+                    const canOperate = async () => {
+                        const currentToken = await authorize()
+                        if (!currentToken || currentToken.id !== token.id) { return false }
+                        const currentCatalog = await this.options.getCatalog()
+                        const checkedToken = await authorize()
+                        const target = currentCatalog.connections.find(item => item.id === connection.id)
+                        return !!checkedToken && checkedToken.id === token.id && !!target && target.type === connection.type
+                            && canAccessConnection(checkedToken, target)
+                            && resolveMCPConnectionCapability(checkedToken, currentCatalog, target.id, definition.capability!)
+                    }
+                    if (!await canOperate()) { throw new Error('Connection access denied') }
+                    result = await this.options.callOperation(token.id, connection, definition.name, args, canOperate)
+                    // A completed read must not expose data after a permission change.
+                    if (!await canOperate()) { throw new Error('Connection access denied') }
+                }
                 return { content: [{ type: 'text', text: JSON.stringify(result) }] }
-            } catch {
-                return { isError: true, content: [{ type: 'text', text: 'Tool denied or invalid arguments' }] }
+            } catch (error) {
+                return { isError: true, content: [{ type: 'text', text: error instanceof MCPToolError ? error.message : 'Tool denied or invalid arguments' }] }
             }
         })
         const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true })
