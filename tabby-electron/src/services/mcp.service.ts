@@ -5,6 +5,7 @@ import { MCPCatalog, MCPPermissions, validateMCPPermissions } from '../mcp/acces
 import { MCPHTTPServer } from '../mcp/server'
 import { MCPToken, MCPTokens } from '../mcp/tokens'
 import { ElectronService } from './electron.service'
+import { MCPConnectionsService } from './mcpConnections.service'
 
 export interface MCPSettings {
     enabled: boolean
@@ -29,6 +30,7 @@ export class MCPService {
         private vault: VaultService,
         @Inject(BOOTSTRAP_DATA) private bootstrap: BootstrapData,
         electron: ElectronService,
+        private connections: MCPConnectionsService,
     ) {
         this.tokens = new MCPTokens(vault, () => this.settings.tokens)
         this.server = new MCPHTTPServer({
@@ -37,6 +39,8 @@ export class MCPService {
                 return this.settings.enabled && !this.closing ? entry : null
             },
             getCatalog: () => this.getCatalog(),
+            callOperation: (...args) => this.connections.callOperation(...args),
+            disposeOperations: () => this.connections.disposeAll(),
         })
         config.ready$.toPromise().then(() => this.refresh())
         config.changed$.subscribe(() => this.refresh())
@@ -100,10 +104,13 @@ export class MCPService {
     async getCatalog (): Promise<MCPCatalog> {
         const groups = await this.profiles.getProfileGroups({ includeProfiles: true, includeNonUserGroup: true })
         return {
-            groups: groups.map(group => ({ id: group.id, name: group.name })),
+            groups: groups.map(group => ({ id: group.id, name: group.name, parentId: group.parentGroupId ?? null, icon: group.icon ?? null, color: group.color ?? null })),
             connections: groups.flatMap(group => (group.profiles ?? [])
                 .filter(profile => profile.id && !profile.isTemplate)
-                .map(profile => ({ id: profile.id!, name: profile.name, type: profile.type, group: group.id }))),
+                .map(profile => {
+                    const resolved = this.profiles.getConfigProxyForProfile(profile)
+                    return { id: profile.id!, name: profile.name, type: profile.type, group: group.id, icon: resolved.icon, color: resolved.color, editable: !profile.isBuiltin }
+                })),
         }
     }
 
@@ -140,6 +147,7 @@ export class MCPService {
                 this.settings.tokens = previous
                 throw error
             }
+            await this.connections.disposeToken(id)
         })
     }
 
@@ -147,6 +155,7 @@ export class MCPService {
         return this.mutateTokens(async () => {
             // Remove the credential first: a failed config write must never restore access.
             await this.tokens.remove(id)
+            await this.connections.disposeToken(id)
             this.settings.tokens = this.settings.tokens.filter(token => token.id !== id)
             await this.config.save()
         })

@@ -40,6 +40,7 @@ function setup (isMainWindow = true) {
         },
     }
     const profiles = {
+        getConfigProxyForProfile: profile => ({ ...profile, icon: null, color: null }),
         getProfileGroups: async options => {
             assert.deepEqual(options, { includeProfiles: true, includeNonUserGroup: true })
             return [{
@@ -53,7 +54,13 @@ function setup (isMainWindow = true) {
         },
     }
     const ipcRenderer = new EventEmitter()
-    const service = new MCPService(config as any, profiles as any, vault as any, { isMainWindow } as any, { ipcRenderer } as any)
+    const disposedTokens: string[] = []
+    const connections = {
+        callOperation: async () => { throw new Error('Unexpected connection operation') },
+        disposeToken: id => { disposedTokens.push(id) },
+        disposeAll: () => undefined,
+    }
+    const service = new MCPService(config as any, profiles as any, vault as any, { isMainWindow } as any, { ipcRenderer } as any, connections as any)
     ready.next(true)
     ready.complete()
     const cleanup = async () => {
@@ -61,7 +68,7 @@ function setup (isMainWindow = true) {
         await service.refresh()
         windowEvents.dispatchEvent(new Event('beforeunload'))
     }
-    return { service, config, secrets, ipcRenderer, cleanup }
+    return { service, config, secrets, ipcRenderer, disposedTokens, cleanup }
 }
 
 test('service persists an automatic port and reuses it across serialized restarts', async () => {
@@ -99,8 +106,8 @@ test('catalog exposes only stable connection metadata, including provider groups
     const { service, cleanup } = setup()
     try {
         assert.deepEqual(await service.getCatalog(), {
-            groups: [{ id: 'group', name: 'Group' }],
-            connections: [{ id: 'one', name: 'One', type: 'ssh', group: 'group' }],
+            groups: [{ id: 'group', name: 'Group', parentId: null, icon: null, color: null }],
+            connections: [{ id: 'one', name: 'One', type: 'ssh', group: 'group', icon: null, color: null, editable: true }],
         })
     } finally { await cleanup() }
 })
@@ -157,7 +164,8 @@ test('created, edited and revoked tokens affect authenticated HTTP requests', as
     const { service, config, secrets, cleanup } = setup()
     try {
         const permissions = newMCPPermissions()
-        permissions.tools = ['list_connections']
+        permissions.capabilities = ['connection_operations']
+        permissions.connections.one = { included: true, overrides: { view_config: true } }
         const token = await service.createToken('Agent', permissions)
         assert.equal(secrets.length, 1)
         config.store.mcp.enabled = true
@@ -167,7 +175,9 @@ test('created, edited and revoked tokens affect authenticated HTTP requests', as
             headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream' },
             body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }),
         })
-        assert.equal((await (await call()).json()).result.tools.length, 1)
+        assert.deepEqual((await (await call()).json()).result.tools.map(tool => tool.name).sort(), [
+            'get_connection_config', 'list_connection_groups', 'list_connections', 'list_group_connections',
+        ])
         await service.updateToken(config.store.mcp.tokens[0].id, newMCPPermissions())
         assert.equal((await (await call()).json()).result.tools.length, 0)
         await service.removeToken(config.store.mcp.tokens[0].id)
@@ -191,5 +201,21 @@ test('token display names are optional and roll back with permission changes on 
         await service.updateToken(original.id, newMCPPermissions(), '')
         assert.equal(config.store.mcp.tokens[0].name, '')
         assert.equal(config.store.mcp.tokens[0].preview, original.preview)
+    } finally { await cleanup() }
+})
+
+test('committed permission edits and revocation dispose token-owned connections', async () => {
+    const { service, config, secrets, disposedTokens, cleanup } = setup()
+    try {
+        await service.createToken('Agent', newMCPPermissions())
+        const id = config.store.mcp.tokens[0].id
+        await service.updateToken(id, newMCPPermissions())
+        assert.deepEqual(disposedTokens, [id])
+        config.fail = true
+        await assert.rejects(service.updateToken(id, newMCPPermissions()), /Save failed/)
+        assert.deepEqual(disposedTokens, [id], 'a failed edit keeps the existing policy and sessions')
+        await assert.rejects(service.removeToken(id), /Save failed/)
+        assert.deepEqual(disposedTokens, [id, id], 'revocation closes connections even when metadata persistence fails')
+        assert.deepEqual(secrets, [], 'a failed metadata write does not restore the revoked credential')
     } finally { await cleanup() }
 })
