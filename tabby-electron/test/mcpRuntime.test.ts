@@ -169,6 +169,7 @@ function adapterFixture (profile: any, ready = true, Service = MCPConnectionsSer
             const output = new Subject<Buffer>()
             const session = { open: ready, resize: () => undefined, destroy: async () => { session.open = false } }
             const tab = {
+                ...params.inputs,
                 profile: params.inputs.profile, session, binaryOutput$: output, sessionChanged$: new Subject(), destroyed$: destroyed,
                 sendInput: () => undefined,
                 destroy: async () => { destroyed.next(); destroyed.complete(); output.complete(); await session.destroy() },
@@ -295,6 +296,22 @@ test('SSH uploads include empty files, disable forwarding and close native resou
     assert.deepEqual(fixture.openedProfiles[0].options.forwardedPorts, [])
     assert.equal(fixture.openedProfiles[0].options.agentForward, false)
     assert.equal(fixture.opened.length, 0)
+    await fixture.adapter.disposeAll()
+})
+
+test('a provider destruction failure still closes the owned SSH transport and removes its tab', async () => {
+    const fixture = sftpFixture()
+    const result: any = await fixture.adapter.callOperation('token', fixture.profile, 'open_connection', {}, async () => true)
+    const tab = fixture.opened[0]
+    // Simulate the SSH tab calling its supplied transport factory during startup.
+    await tab.setupOneSession(undefined, tab.profile)
+    let removals = 0
+    tab.destroyed$.subscribe(() => { removals++ })
+    tab.session.destroy = async () => { throw new Error('Provider destruction failed') }
+    await fixture.adapter.disposeToken('token')
+    assert.equal(fixture.disconnects(), 1)
+    assert.equal(removals, 1)
+    await assert.rejects(fixture.adapter.callOperation('token', fixture.profile, 'read_connection', { sessionId: result.sessionId }, async () => true), /not found/)
     await fixture.adapter.disposeAll()
 })
 

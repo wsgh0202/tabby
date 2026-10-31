@@ -155,9 +155,14 @@ export class MCPConnectionsService {
                 subscriptions.forEach(subscription => subscription.unsubscribe())
                 // Explicitly closing the own session cannot offer reconnect or
                 // accidentally close a user tab through the closed-tabs stack.
-                await tab.session?.destroy()
-                await this.disposeTransfer(sshScope)
-                try { await tab.destroy() } catch { BaseTabComponent.prototype.destroy.call(tab) }
+                try {
+                    await tab.session?.destroy()
+                } finally {
+                    // A provider can reject destruction after its native session
+                    // has failed. Still close owned transports and remove the tab.
+                    await this.disposeTransfer(sshScope)
+                    try { await tab.destroy() } catch { BaseTabComponent.prototype.destroy.call(tab) }
+                }
             },
         }
         try {
