@@ -1,0 +1,62 @@
+h3 MCP
+p.text-muted.mb-4(translate) Allow agents to discover Tabby connections through Model Context Protocol.
+
+section.mcp-section
+    .section-heading
+        h4.mb-0(translate) Server configuration
+        span.text-success(*ngIf='mcp.address', translate) Running
+        span.text-muted(*ngIf='!mcp.address', translate) Stopped
+    .form-line
+        .header
+            .title(translate) Enable MCP server
+            .description(translate) Listen on this computer only. Requests require a bearer token and an unlocked vault.
+        toggle([ngModel]='mcp.settings.enabled', (ngModelChange)='saveSettings($event)', [disabled]='busy')
+    .form-line.port-line
+        .header
+            label.title(for='mcp-port', translate) Port
+            .description(translate) Leave empty to reuse the previous automatic port, or choose a free port automatically.
+        .port-input
+            input#mcp-port.form-control(type='number', min='1', max='65535', [(ngModel)]='port', [disabled]='busy')
+            button.btn.btn-secondary(type='button', (click)='saveSettings()', [disabled]='busy', translate) Apply
+    .server-address
+        .address-copy
+            span(translate) Server address
+            code {{mcp.address || previewAddress}}
+        button.btn.btn-secondary(type='button', (click)='copy(mcp.address!)', *ngIf='mcp.address', translate) Copy
+    p.text-muted.mb-0.mt-2(*ngIf='!mcp.address && !mcp.error', translate) Server is stopped or managed by the main window.
+
+.alert.alert-danger(*ngIf='mcp.error', role='alert') {{mcp.error | translate}}
+.alert.alert-danger(*ngIf='error', role='alert') {{error | translate}}
+.alert.alert-info(*ngIf='!mcp.isMainWindow', translate) MCP runs in the main window. Unlock the vault in that window before connecting an agent.
+.alert.alert-info(*ngIf='!vault.isEnabled()', translate) Configure the vault in Vault settings before creating tokens.
+.alert.alert-info(*ngIf='vault.isEnabled() && !vault.isOpen()')
+    p(translate) Unlock the vault to allow MCP requests. Requests are rejected while it is locked.
+    button.btn.btn-secondary(type='button', (click)='unlockVault()', [disabled]='busy || !mcp.isMainWindow', translate) Unlock vault
+
+section
+    .section-heading
+        .header
+            h4(translate) Tokens
+            p.text-muted.mb-0(translate) Each token has its own tool capabilities and access permissions.
+        button.btn.btn-primary(type='button', (click)='openEditor()', [disabled]='busy || editorOpen || !vault.isEnabled() || !!createdToken', translate) Create token
+    p.text-muted(translate) Use Authorization: Bearer TOKEN when connecting an agent. Each token has its own tools and connection access.
+    .alert.alert-warning(*ngIf='createdToken', role='status')
+        p(translate) Copy this token now. It will only be shown once.
+        code.d-block.text-break.selectable {{createdToken}}
+        button.btn.btn-secondary.mt-2(type='button', (click)='copy(createdToken!)', translate) Copy token
+        button.btn.btn-primary.mt-2.ms-2(type='button', (click)='createdToken = null', translate) Done
+    .mcp-section.token-list
+        p.text-muted.p-3.mb-0(*ngIf='!mcp.settings.tokens.length', translate) No tokens yet.
+        .token-row(*ngFor='let token of mcp.settings.tokens')
+            .token-details
+                .token-name {{tokenLabel(token)}}
+                code.text-muted(*ngIf='token.name && token.preview') {{token.preview}}
+                .token-summary.text-muted
+                    span(translate='Capabilities: {count} / {total}', [translateParams]='{count: token.tools.length, total: toolCount}')
+                    span(*ngIf='token.groups.mode === "all"', translate) All groups
+                    span(*ngIf='token.groups.mode === "custom"', translate='Groups: {count}', [translateParams]='{count: token.groups.ids.length}')
+                    span(*ngIf='token.connections.mode === "all"', translate) All connections
+                    span(*ngIf='token.connections.mode === "custom"', translate='Individual connections: {count}', [translateParams]='{count: token.connections.ids.length}')
+            .token-actions
+                button.btn.btn-secondary(type='button', (click)='openEditor(token)', [disabled]='busy || editorOpen || !!createdToken', translate) View details
+                button.btn.btn-danger(type='button', (click)='removeToken(token)', [disabled]='busy || editorOpen', translate) Revoke

@@ -23,5 +23,12 @@ export class ElectronConfigProvider extends ConfigProvider {
         },
     }
 
-    defaults = {}
+    defaults = {
+        mcp: {
+            enabled: false,
+            port: null,
+            lastRandomPort: null,
+            tokens: [],
+        },
+    }
 }

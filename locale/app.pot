@@ -22,6 +22,170 @@ msgstr ""
 msgid "Paste an OpenSSH public key. This takes precedence over the key name when both are set."
 msgstr ""
 
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "All"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Allow agents to discover Tabby connections through Model Context Protocol."
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Apply"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Available connections"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Available groups"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Available tools"
+msgstr ""
+
+#: tabby-electron/src/mcp/tokens.ts
+msgid "Configure the vault before creating an MCP token"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Configure the vault in Vault settings before creating tokens."
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Copy this token now. It will only be shown once."
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Copy token"
+msgstr ""
+
+#: tabby-electron/src/services/mcp.service.ts
+msgid "Could not start MCP server"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Create token"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Custom"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Done"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Edit permissions"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Enable MCP server"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Individual selections grant only those connections. Their groups are visible, but other connections in those groups remain hidden."
+msgstr ""
+
+#: tabby-electron/src/mcp/access.ts
+msgid "Invalid MCP access scope"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Leave empty to reuse the previous automatic port, or choose a free port automatically."
+msgstr ""
+
+#: tabby-electron/src/mcp/access.ts
+msgid "List accessible connection groups."
+msgstr ""
+
+#: tabby-electron/src/mcp/access.ts
+msgid "List accessible connections in a group."
+msgstr ""
+
+#: tabby-electron/src/mcp/access.ts
+msgid "List all accessible connections."
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Listen on this computer only. Requests require a bearer token and an unlocked vault."
+msgstr ""
+
+#: tabby-electron/src/services/mcp.service.ts
+msgid "MCP port is already in use"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.ts
+msgid "MCP port must be between 1 and 65535"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "MCP runs in the main window. Unlock the vault in that window before connecting an agent."
+msgstr ""
+
+#: tabby-electron/src/services/mcp.service.ts
+msgid "MCP token no longer exists"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Name"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Port"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Revoke"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Running at:"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Save"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Selecting a group grants all its current and future connections. Subgroups are selected separately."
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Server is stopped or managed by the main window."
+msgstr ""
+
+#: tabby-electron/src/mcp/tokens.ts
+msgid "Token name is required"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Token permissions"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Tokens"
+msgstr ""
+
+#: tabby-electron/src/mcp/access.ts
+msgid "Unknown MCP tool"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Unlock the vault to allow MCP requests. Requests are rejected while it is locked."
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Unlock vault"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Use Authorization: Bearer TOKEN when connecting an agent. Each token has its own tools and connection access."
+msgstr ""
+
 #: tabby-local/src/components/terminalTab.component.ts:113
 msgid "\"{command}\" is still running. Close?"
 msgstr ""
@@ -1248,4 +1412,162 @@ msgstr ""
 
 #: tabby-terminal/src/hotkeys.ts:58
 msgid "Zoom out"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Access permissions"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "All connections"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "All groups"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "By connection"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "By group"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Capabilities: {count} / {total}"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Choose what the agent can do."
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Continue editing"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Discard changes"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Discard unsaved changes?"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Each token has its own tool capabilities and access permissions."
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Edit token"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "General"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Granted by group"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Group and individual connection permissions are combined."
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Groups: {count}"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "If left empty, the token is displayed with its middle characters omitted."
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Includes all current and future connections. Empty groups still require a group grant."
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Individual connections: {count}"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "New token"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "No connections available."
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "No groups available."
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "No tokens yet."
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Optional"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Running"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Save changes"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Selected connections"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Selected groups"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Selected: {count} / {total}"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Server address"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Server configuration"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Stopped"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Token name"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.ts
+msgid "Token settings navigation"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.pug
+msgid "Tool capabilities"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.ts
+msgid "View connection groups"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.ts
+msgid "View connections"
+msgstr ""
+
+#: tabby-electron/src/components/mcpTokenModal.component.ts
+msgid "View connections in a group"
+msgstr ""
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "View details"
 msgstr ""
