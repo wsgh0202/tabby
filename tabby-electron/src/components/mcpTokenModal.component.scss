@@ -11,14 +11,21 @@
 
 .modal-header {
     align-items: flex-start;
+    justify-content: space-between;
     gap: 1rem;
 }
 
 .token-identity {
+    flex: 1 1 auto;
     min-width: 0;
     overflow-wrap: anywhere;
 
     h3 { margin-top: .25rem !important; }
+}
+
+.token-modal-close {
+    flex: 0 0 auto;
+    margin-inline-start: auto;
 }
 
 .token-layout {

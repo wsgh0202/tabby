@@ -6,7 +6,7 @@
             span(*ngIf='displayName') {{displayName}}
             span(*ngIf='!displayName', translate) New token
         code.text-muted(*ngIf='token?.preview') {{token?.preview}}
-    button.btn.btn-secondary(type='button', (click)='cancel()', [disabled]='busy', [attr.aria-label]='"Close" | translate')
+    button.btn.btn-secondary.token-modal-close(type='button', (click)='cancel()', [disabled]='busy', [attr.aria-label]='"Close" | translate')
         i.fas.fa-times(aria-hidden='true')
 
 .token-layout
