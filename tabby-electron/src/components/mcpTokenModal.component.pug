@@ -13,7 +13,6 @@
     nav.token-navigation([attr.aria-label]='navigationLabel | translate')
         button.btn(type='button', (click)='navigate(general)', [class.btn-secondary]='activeSection === "general"', [attr.aria-current]='activeSection === "general" ? "location" : null', translate) General
         button.btn(type='button', (click)='navigate(toolsSection)', [class.btn-secondary]='activeSection === "tools"', [attr.aria-current]='activeSection === "tools" ? "location" : null', translate) Tool capabilities
-        button.btn(type='button', (click)='navigate(access)', [class.btn-secondary]='activeSection === "access"', [attr.aria-current]='activeSection === "access" ? "location" : null', translate) Access permissions
 
     .token-form-page(#formPage, (scroll)='updateActiveSection()')
         fieldset([disabled]='busy')
@@ -28,47 +27,14 @@
             section#tools(#toolsSection, data-mcp-section)
                 .section-heading
                     h4.mb-0(translate) Tool capabilities
-                    small.text-muted(translate='Selected: {count} / {total}', [translateParams]='{count: permissions.tools.length, total: tools.length}')
                 p.text-muted(translate) Choose what the agent can do.
-                label.permission-row(*ngFor='let tool of tools')
-                    input.form-check-input(type='checkbox', [ngModel]='permissions.tools.includes(tool.name)', (ngModelChange)='toggleSelection(permissions.tools, tool.name, $event)')
-                    .permission-copy
-                        span {{tool.label | translate}}
-                        small.text-muted {{tool.description | translate}}
-
-            section#access(#access, data-mcp-section)
-                h4(translate) Access permissions
-                p.text-muted(translate) Group and individual connection permissions are combined.
-                .scope-grid
-                    .scope-panel
-                        h5.scope-heading(translate) By group
-                        .scope-body
-                            select.form-select([(ngModel)]='permissions.groups.mode', [attr.aria-label]='"Available groups" | translate')
-                                option(value='custom', translate) Selected groups
-                                option(value='all', translate) All groups
-                            p.alert.alert-warning.mt-3(translate) Selecting a group grants all its current and future connections. Subgroups are selected separately.
-                            div(*ngIf='permissions.groups.mode === "custom"')
-                                p.text-muted(*ngIf='!catalog.groups.length', translate) No groups available.
-                                label.permission-row(*ngFor='let group of catalog.groups')
-                                    input.form-check-input(type='checkbox', [ngModel]='permissions.groups.ids.includes(group.id)', (ngModelChange)='toggleSelection(permissions.groups.ids, group.id, $event)')
-                                    span {{group.name}}
-                    .scope-panel
-                        h5.scope-heading(translate) By connection
-                        .scope-body
-                            select.form-select([(ngModel)]='permissions.connections.mode', [attr.aria-label]='"Available connections" | translate')
-                                option(value='custom', translate) Selected connections
-                                option(value='all', translate) All connections
-                            p.text-muted.mt-3(*ngIf='permissions.connections.mode === "custom"', translate) Individual selections grant only those connections. Their groups are visible, but other connections in those groups remain hidden.
-                            p.text-muted.mt-3(*ngIf='permissions.connections.mode === "all"', translate) Includes all current and future connections. Empty groups still require a group grant.
-                            div(*ngIf='permissions.connections.mode === "custom"')
-                                p.text-muted(*ngIf='!catalog.connections.length', translate) No connections available.
-                                label.permission-row(*ngFor='let connection of catalog.connections')
-                                    input.form-check-input(type='checkbox', [ngModel]='permissions.connections.ids.includes(connection.id)', (ngModelChange)='toggleSelection(permissions.connections.ids, connection.id, $event)')
-                                    .permission-copy
-                                        span {{connection.name}}
-                                            small.text-muted.ms-2 {{connection.type}}
-                                        small.text-muted {{groupName(connection.group)}}
-                                        small.text-info(*ngIf='grantedByGroup(connection)', translate) Granted by group
+                .capability-package
+                    label.permission-row
+                        input.form-check-input(type='checkbox', [ngModel]='connectionOperationsEnabled', (ngModelChange)='setConnectionOperations($event)')
+                        .permission-copy
+                            span(translate) Connection operations
+                            small.text-muted(translate) Discover and use the connections included in this token.
+                    button.btn.btn-secondary(type='button', (click)='configureConnections()', [disabled]='!connectionOperationsEnabled', translate) Configure connection operations
 
 .alert.alert-danger.mx-3.mb-3(*ngIf='error', role='alert') {{error | translate}}
 .alert.alert-warning.mx-3.mb-3(*ngIf='discardPrompt')

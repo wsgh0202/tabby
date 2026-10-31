@@ -337,3 +337,117 @@ msgstr "View details"
 #: tabby-core/src/services/vault.service.ts
 msgid "Vault unlock cancelled"
 msgstr "Vault unlock cancelled"
+
+msgid "Access connection"
+msgstr "Access connection"
+
+msgid "Access permissions and connection capabilities"
+msgstr "Access permissions and connection capabilities"
+
+msgid "Applies independent overrides to the selected existing connections. Group templates and new connections are unaffected."
+msgstr "Applies independent overrides to the selected existing connections. Group templates and new connections are unaffected."
+
+msgid "Apply to {count} connections"
+msgstr "Apply to {count} connections"
+
+msgid "Apply to these connections"
+msgstr "Apply to these connections"
+
+msgid "Batch configure"
+msgstr "Batch configure"
+
+msgid "Batch configure connection capabilities"
+msgstr "Batch configure connection capabilities"
+
+msgid "Commands may read, write, or transfer files. Upload and download tool switches cannot prevent these operations."
+msgstr "Commands may read, write, or transfer files. Upload and download tool switches cannot prevent these operations."
+
+msgid "Configure connection operations"
+msgstr "Configure connection operations"
+
+msgid "Confirm configuration"
+msgstr "Confirm configuration"
+
+msgid "Connection groups"
+msgstr "Connection groups"
+
+msgid "Connection operations"
+msgstr "Connection operations"
+
+msgid "Disabled"
+msgstr "Disabled"
+
+msgid "Discover and use the connections included in this token."
+msgstr "Discover and use the connections included in this token."
+
+msgid "Download"
+msgstr "Download"
+
+msgid "Enabled"
+msgstr "Enabled"
+
+msgid "Find a group"
+msgstr "Find a group"
+
+msgid "Group / connection"
+msgstr "Group / connection"
+
+msgid "Include connection"
+msgstr "Include connection"
+
+msgid "Include connections in this group"
+msgstr "Include connections in this group"
+
+msgid "Included connections: {count}"
+msgstr "Included connections: {count}"
+
+msgid "Independent"
+msgstr "Independent"
+
+msgid "Independent: does not follow group changes"
+msgstr "Independent: does not follow group changes"
+
+msgid "Inherited"
+msgstr "Inherited"
+
+msgid "Inherited: follows its direct group"
+msgstr "Inherited: follows its direct group"
+
+msgid "Invalid MCP capabilities"
+msgstr "Invalid MCP capabilities"
+
+msgid "Modify configuration"
+msgstr "Modify configuration"
+
+msgid "Modify the configuration of an included connection without granting terminal or file-transfer access."
+msgstr "Modify the configuration of an included connection without granting terminal or file-transfer access."
+
+msgid "No groups found."
+msgstr "No groups found."
+
+msgid "Read the configuration of an included connection without opening a terminal or executing commands."
+msgstr "Read the configuration of an included connection without opening a terminal or executing commands."
+
+msgid "Reset"
+msgstr "Reset"
+
+msgid "Reset overrides"
+msgstr "Reset overrides"
+
+msgid "Transfer files from the agent to this connection through MCP and Tabby."
+msgstr "Transfer files from the agent to this connection through MCP and Tabby."
+
+msgid "Transfer files from this connection to the agent through Tabby and MCP."
+msgstr "Transfer files from this connection to the agent through Tabby and MCP."
+
+msgid "Upload"
+msgstr "Upload"
+
+msgid "Upload and download are convenience tools, not a file-transfer security boundary. With connection access, an agent may still transfer files through commands or encoded text."
+msgstr "Upload and download are convenience tools, not a file-transfer security boundary. With connection access, an agent may still transfer files through commands or encoded text."
+
+msgid "Use this connection through Tabby to execute commands and interact with its terminal."
+msgstr "Use this connection through Tabby to execute commands and interact with its terminal."
+
+msgid "View configuration"
+msgstr "View configuration"

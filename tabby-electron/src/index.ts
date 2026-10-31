@@ -1,6 +1,7 @@
 import { NgModule } from '@angular/core'
 import { CommonModule } from '@angular/common'
 import { FormsModule } from '@angular/forms'
+import { NgbPopoverModule } from '@ng-bootstrap/ng-bootstrap'
 import { SettingsTabProvider } from 'tabby-settings'
 import TabbyCorePlugin, { PlatformService, LogService, UpdaterService, DockingService, HostAppService, ThemesService, Platform, AppService, ConfigService, WIN_BUILD_FLUENT_BG_SUPPORTED, isWindowsBuild, HostWindowService, HotkeyProvider, ConfigProvider, FileProvider } from 'tabby-core'
 import { TerminalColorSchemeProvider, TerminalContextMenuItemProvider, TerminalDecorator } from 'tabby-terminal'
@@ -23,6 +24,9 @@ import { ElectronUACService } from './services/uac.service'
 import { MCPService } from './services/mcp.service'
 import { MCPSettingsTabComponent } from './components/mcpSettingsTab.component'
 import { MCPTokenModalComponent } from './components/mcpTokenModal.component'
+import { MCPConnectionsModalComponent } from './components/mcpConnectionsModal.component'
+import { MCPBatchModalComponent } from './components/mcpBatchModal.component'
+import { MCPCapabilityHelpComponent } from './components/mcpCapabilityHelp.component'
 import { MCPSettingsTabProvider } from './mcpSettings'
 
 import { ElectronHotkeyProvider } from './hotkeys'
@@ -48,8 +52,8 @@ import { WSLShellProvider } from './shells/wsl'
 import { VSDevToolsProvider } from './shells/vs'
 
 @NgModule({
-    imports: [CommonModule, FormsModule, TabbyCorePlugin],
-    declarations: [MCPSettingsTabComponent, MCPTokenModalComponent],
+    imports: [CommonModule, FormsModule, NgbPopoverModule, TabbyCorePlugin],
+    declarations: [MCPSettingsTabComponent, MCPTokenModalComponent, MCPConnectionsModalComponent, MCPBatchModalComponent, MCPCapabilityHelpComponent],
     providers: [
         { provide: SettingsTabProvider, useClass: MCPSettingsTabProvider, multi: true },
         { provide: TerminalColorSchemeProvider, useClass: HyperColorSchemes, multi: true },

@@ -2881,3 +2881,108 @@ msgstr "查看详情"
 #: tabby-core/src/services/vault.service.ts
 msgid "Vault unlock cancelled"
 msgstr "已取消解锁保险库"
+
+msgid "Access connection"
+msgstr "访问连接"
+
+msgid "Access permissions and connection capabilities"
+msgstr "访问权限与连接能力"
+
+msgid "Applies independent overrides to the selected existing connections. Group templates and new connections are unaffected."
+msgstr "为所选现有连接应用独立配置，不影响分组模板与新增连接。"
+
+msgid "Apply to {count} connections"
+msgstr "应用到 {count} 个连接"
+
+msgid "Apply to these connections"
+msgstr "应用到以下连接"
+
+msgid "Batch configure"
+msgstr "批量配置"
+
+msgid "Batch configure connection capabilities"
+msgstr "批量配置连接能力"
+
+msgid "Commands may read, write, or transfer files. Upload and download tool switches cannot prevent these operations."
+msgstr "命令可以读取、写入或传输文件。上传、下载工具的权限开关无法阻止这些操作。"
+
+msgid "Configure connection operations"
+msgstr "配置连接操作"
+
+msgid "Confirm configuration"
+msgstr "确认配置"
+
+msgid "Connection groups"
+msgstr "连接分组"
+
+msgid "Connection operations"
+msgstr "连接操作"
+
+msgid "Discover and use the connections included in this token."
+msgstr "发现并使用此令牌包含的连接。"
+
+msgid "Enabled"
+msgstr "开启"
+
+msgid "Find a group"
+msgstr "查找分组"
+
+msgid "Group / connection"
+msgstr "分组 / 连接"
+
+msgid "Include connection"
+msgstr "勾选连接"
+
+msgid "Include connections in this group"
+msgstr "勾选此分组内的连接"
+
+msgid "Included connections: {count}"
+msgstr "已勾选连接：{count}"
+
+msgid "Independent"
+msgstr "独立"
+
+msgid "Independent: does not follow group changes"
+msgstr "独立：不随分组配置变化"
+
+msgid "Inherited"
+msgstr "继承"
+
+msgid "Inherited: follows its direct group"
+msgstr "继承：跟随直接所属分组"
+
+msgid "Invalid MCP capabilities"
+msgstr "无效的 MCP 能力配置"
+
+msgid "Modify configuration"
+msgstr "修改配置"
+
+msgid "Modify the configuration of an included connection without granting terminal or file-transfer access."
+msgstr "修改已勾选连接的配置，不会因此授予终端访问或文件传输权限。"
+
+msgid "No groups found."
+msgstr "未找到分组。"
+
+msgid "Read the configuration of an included connection without opening a terminal or executing commands."
+msgstr "读取已勾选连接的配置，不会打开终端或执行命令。"
+
+msgid "Reset"
+msgstr "重置"
+
+msgid "Reset overrides"
+msgstr "重置权限覆盖"
+
+msgid "Transfer files from the agent to this connection through MCP and Tabby."
+msgstr "经由 MCP 和 Tabby，将 Agent 所在位置的文件传输到此连接。"
+
+msgid "Transfer files from this connection to the agent through Tabby and MCP."
+msgstr "经由 Tabby 和 MCP，将此连接上的文件传输到 Agent 所在位置。"
+
+msgid "Upload and download are convenience tools, not a file-transfer security boundary. With connection access, an agent may still transfer files through commands or encoded text."
+msgstr "上传、下载仅提供便捷工具操作，不能形成文件传输的安全边界。允许访问连接时，Agent 仍可通过命令或编码文本传输文件。"
+
+msgid "Use this connection through Tabby to execute commands and interact with its terminal."
+msgstr "通过 Tabby 访问此连接，执行命令并与终端交互。"
+
+msgid "View configuration"
+msgstr "查看配置"

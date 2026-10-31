@@ -1,0 +1,71 @@
+:host {
+    display: flex;
+    flex-direction: column;
+    height: 44rem;
+    max-height: calc(100vh - max(3.5rem, 38px * var(--spaciness, 1)) - 2rem);
+    min-height: 0;
+}
+
+.modal-header, .modal-footer, .policy-legend { flex-shrink: 0; }
+.modal-header { gap: 1rem; align-items: flex-start; }
+.modal-identity { min-width: 0; overflow-wrap: anywhere; }
+.modal-identity h3 { margin-top: .25rem !important; }
+.modal-close { flex: 0 0 auto; margin-inline-start: auto; }
+.policy-layout { display: grid; grid-template-columns: 14rem minmax(0, 1fr); flex: 1; min-height: 0; }
+.group-navigation { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--theme-bg-less); border-inline-end: 1px solid var(--theme-bg-more-2); }
+.group-navigation-heading { padding: 1rem .75rem; }
+.group-tree { min-height: 0; overflow: auto; padding: 0 .5rem .75rem; overscroll-behavior: contain; }
+.group-navigation-row { display: flex; align-items: center; gap: .2rem; border-radius: .25rem; }
+.group-navigation-row.selected { background: var(--theme-bg-more-2); }
+.expand, .expand-placeholder { width: 1.25rem; flex: 0 0 1.25rem; padding: .25rem 0; font-size: .7rem; }
+.group-link { display: flex; align-items: center; gap: .35rem; flex: 1; min-width: 0; text-align: start; padding: .5rem 0; }
+.group-name { overflow-wrap: anywhere; }
+.group-count { margin-inline-start: auto; white-space: nowrap; font-variant-numeric: tabular-nums; opacity: .7; }
+profile-icon { display: inline-block; width: 1rem; flex: 0 0 1rem; }
+.policy-page { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+.policy-toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .75rem; padding: .75rem 1rem; border-bottom: 1px solid var(--theme-bg-more-2); }
+.toolbar-actions { display: flex; gap: .5rem; }
+.policy-scroll { overflow: auto; min-height: 0; flex: 1; overscroll-behavior: contain; }
+.policy-table { width: 100%; min-width: 45rem; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
+col.name-column { width: 15rem; }
+col.capability-column { width: 5.5rem; }
+col.row-actions { width: 2.5rem; }
+th, td { padding: .75rem .25rem; text-align: center; border-bottom: 1px solid var(--theme-bg-more-2); }
+thead th { position: sticky; top: 0; z-index: 1; background: var(--theme-bg); font-size: .8rem; font-weight: normal; }
+.name-column { text-align: start; padding-inline: 0; }
+thead .name-column { padding-inline-start: .75rem; }
+.capability-heading { display: flex; align-items: center; justify-content: center; gap: .3rem; }
+.capability-heading span { overflow-wrap: anywhere; }
+.policy-name { display: flex; gap: .4rem; align-items: center; min-height: 2rem; padding-inline-end: .5rem; font-weight: normal; }
+.scope-checkbox { flex-shrink: 0; margin: 0; }
+.connection-name { overflow-wrap: anywhere; }
+.group-row { background: var(--theme-bg-more); }
+.group-row .connection-name { font-weight: 600; }
+.current-group { background: var(--theme-bg-more-2); }
+.excluded .connection-name { opacity: .65; }
+.permission-control { display: inline-flex; align-items: center; justify-content: center; gap: .45rem; padding: .45rem; min-width: 3.2rem; border: 1px solid var(--theme-bg-more-2); border-radius: .3rem; color: inherit; background: var(--theme-bg-less); cursor: pointer; }
+.permission-control:disabled { opacity: .4; cursor: default; }
+.permission-control:focus-visible { outline: 2px solid var(--theme-fg); outline-offset: 2px; }
+.permission-control.inherited, .legend-source.inherited { border-style: dashed; border-color: #a7b2ff; background: rgba(150, 165, 255, .12); color: #b6c0ff; }
+.permission-mark { display: flex; align-items: center; justify-content: center; width: .95rem; height: .95rem; border: 1px solid currentColor; border-radius: .15rem; font-size: .65rem; }
+.checked .permission-mark { background: #a7b2ff; border-color: #a7b2ff; color: #202334; }
+.source-icon { width: .8rem; font-size: .7rem; opacity: .75; }
+.row-reset { padding: .3rem; font-size: .8rem; }
+.policy-legend { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1.25rem; padding: .5rem .75rem; border-top: 1px solid var(--theme-bg-more-2); font-size: .75rem; }
+.legend-item { display: flex; align-items: center; gap: .4rem; }
+.legend-source { display: inline-flex; align-items: center; justify-content: center; width: 1.5rem; height: 1.4rem; border: 1px solid var(--theme-bg-more-2); border-radius: .2rem; background: var(--theme-bg-less); font-size: .65rem; }
+
+// The standard modal-xl is only 800px below 1200px, too narrow for this matrix.
+::ng-deep .mcp-connections-window .modal-dialog {
+    width: calc(100% - 2rem);
+    max-width: 80rem;
+    margin: 1rem auto;
+}
+
+@media (max-width: 767px) {
+    .policy-layout { grid-template-columns: 1fr; grid-template-rows: minmax(0, 9rem) minmax(0, 1fr); }
+    .group-navigation { border-inline-end: 0; border-bottom: 1px solid var(--theme-bg-more-2); }
+    .group-navigation-heading { padding: .5rem .75rem; display: flex; align-items: center; gap: .75rem; }
+    .group-navigation-heading h5 { margin: 0 !important; white-space: nowrap; }
+    .group-navigation-heading input { min-width: 0; }
+}

@@ -1,0 +1,29 @@
+:host { display: inline-flex; flex-shrink: 0; }
+.capability-help { color: inherit; opacity: .75; padding: 0; font-size: .8rem; }
+
+// Ng-bootstrap attaches popovers to body, above the nested modal surfaces.
+::ng-deep .mcp-capability-popover {
+    --bs-popover-bg: var(--theme-bg);
+    --bs-popover-color: var(--theme-fg);
+    --bs-popover-border-color: var(--theme-bg-more-2);
+    --bs-popover-header-bg: var(--theme-bg-more);
+    --bs-popover-header-color: var(--theme-fg);
+    max-width: min(23rem, calc(100vw - 3rem));
+    background: var(--theme-bg);
+    color: var(--theme-fg);
+    border-color: var(--theme-bg-more-2);
+
+    .popover-header {
+        background: var(--theme-bg-more);
+        color: inherit;
+        border-color: var(--theme-bg-more-2);
+    }
+
+    .popover-body { padding: .9rem; color: inherit; line-height: 1.6; }
+
+    .capability-warning {
+        color: #e7b35d;
+        padding-top: .75rem;
+        border-top: 1px solid var(--theme-bg-more-2);
+    }
+}

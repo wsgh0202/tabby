@@ -1,0 +1,14 @@
+:host { display: flex; flex-direction: column; max-height: calc(100vh - max(3.5rem, 38px * var(--spaciness, 1)) - 2rem); min-height: 0; }
+.modal-header, .modal-footer { flex-shrink: 0; }
+.modal-header { align-items: flex-start; gap: 1rem; }
+.modal-identity { min-width: 0; overflow-wrap: anywhere; }
+.modal-identity h3 { margin-top: .25rem !important; }
+.modal-close { margin-inline-start: auto; flex: 0 0 auto; }
+.modal-body { overflow-y: auto; overscroll-behavior: contain; }
+.batch-capabilities { border: 1px solid var(--theme-bg-more-2); border-radius: .375rem; }
+.batch-capability { padding: .75rem 1rem; }
+.batch-capability + .batch-capability { border-top: 1px solid var(--theme-bg-more-2); }
+.capability-title { display: flex; align-items: center; gap: .5rem; }
+.capability-title label { margin: 0; }
+.batch-targets { padding-inline-start: 1.25rem; overflow-wrap: anywhere; }
+.batch-targets li + li { margin-top: .35rem; }
