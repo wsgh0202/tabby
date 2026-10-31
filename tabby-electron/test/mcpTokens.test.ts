@@ -43,8 +43,10 @@ test('authentication observes edits, revocations and vault deletion immediately'
     const { tokens, entries, secrets } = setup()
     const created = await tokens.create('Agent', newMCPPermissions())
     entries.push(created.entry)
-    entries[0].tools = ['list_connections']
-    assert.deepEqual((await tokens.authenticate(created.token))?.tools, ['list_connections'])
+    entries[0].capabilities = ['connection_operations']
+    entries[0].connections.one = { included: true, overrides: { access: true } }
+    assert.deepEqual((await tokens.authenticate(created.token))?.capabilities, ['connection_operations'])
+    assert.deepEqual((await tokens.authenticate(created.token))?.connections.one, { included: true, overrides: { access: true } })
     const [entry] = entries.splice(0, 1)
     assert.equal(await tokens.authenticate(created.token), null)
     entries.push(entry)
@@ -87,9 +89,25 @@ test('unnamed tokens use a non-authenticating preview without storing the bearer
     assert.equal(await tokens.authenticate(created.token), created.entry)
 })
 
-test('display labels support named legacy entries and unnamed previews', () => {
-    const legacy = { ...newMCPPermissions(), id: 'mcp:token:1234567890abcdef', name: 'Existing agent' }
-    assert.equal(getMCPTokenLabel(legacy), 'Existing agent')
-    assert.equal(getMCPTokenLabel({ ...legacy, name: '' }), '12345678…cdef')
+test('display labels support named entries and unnamed previews', () => {
+    const entry = { ...newMCPPermissions(), id: 'mcp:token:1234567890abcdef', name: 'Existing agent' }
+    assert.equal(getMCPTokenLabel(entry), 'Existing agent')
+    assert.equal(getMCPTokenLabel({ ...entry, name: '' }), '12345678…cdef')
     assert.equal(previewMCPToken('1234567890abcdef'), '12345678…cdef')
+})
+
+test('creation snapshots nested group templates and connection overrides', async () => {
+    const { tokens } = setup()
+    const permissions = newMCPPermissions()
+    permissions.capabilities = ['connection_operations']
+    permissions.groups.parent = { access: true, upload: false }
+    permissions.connections.one = { included: true, overrides: { download: true } }
+    const { entry } = await tokens.create('Agent', permissions)
+    permissions.capabilities = []
+    permissions.groups.parent.access = false
+    permissions.connections.one.included = false
+    permissions.connections.one.overrides.download = false
+    assert.deepEqual(entry.capabilities, ['connection_operations'])
+    assert.deepEqual(entry.groups.parent, { access: true, upload: false })
+    assert.deepEqual(entry.connections.one, { included: true, overrides: { download: true } })
 })
