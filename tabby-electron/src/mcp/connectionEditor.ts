@@ -35,6 +35,7 @@ export class MCPConnectionEditor {
     collapsedNavigation = new Set<string>()
     collapsedRows = new Set<string>()
     private groupsById: Map<string, MCPGroup>
+    private navigationRoots: MCPGroup[]
     private paths = new Map<string, MCPGroup[]>()
     private descendants = new Map<string, MCPConnection[]>()
 
@@ -42,6 +43,7 @@ export class MCPConnectionEditor {
         // A dialog uses a fixed catalog snapshot; index membership once for matrix rendering.
         this.groupsById = new Map(catalog.groups.map(group => [group.id, group]))
         catalog.groups.forEach(group => this.paths.set(group.id, getMCPGroupPath(catalog, group.id)))
+        this.navigationRoots = this.buildNavigationRoots()
         for (const connection of catalog.connections) {
             for (const group of this.groupPath(connection.group)) {
                 if (!this.descendants.has(group.id)) { this.descendants.set(group.id, []) }
@@ -115,10 +117,29 @@ export class MCPConnectionEditor {
                 children.forEach(child => visit(child, depth + 1))
             }
         }
-        this.rootGroups.forEach(group => visit(group, 0))
-        // Damaged/orphaned catalogs must remain configurable rather than disappear.
-        if (!result.length && !query) { this.catalog.groups.forEach(group => visit(group, 0)) }
+        this.navigationRoots.forEach(group => visit(group, 0))
         return result
+    }
+
+    private buildNavigationRoots (): MCPGroup[] {
+        const roots: MCPGroup[] = []
+        const reachable = new Set<string>()
+        // Compute structural reachability independently from visible rows. A
+        // collapsed normal subtree is already covered and must not become a new
+        // root, while a disconnected cycle still needs one navigation entry.
+        const candidates = [...this.rootGroups, ...this.catalog.groups.map(group => this.groupPath(group.id)[0] ?? group)]
+        for (const group of candidates) {
+            if (reachable.has(group.id)) { continue }
+            roots.push(group)
+            const pending = [group]
+            while (pending.length) {
+                const current = pending.pop()!
+                if (reachable.has(current.id)) { continue }
+                reachable.add(current.id)
+                pending.push(...this.catalog.groups.filter(child => this.parent(child)?.id === current.id))
+            }
+        }
+        return roots
     }
 
     get rows (): MCPPolicyRow[] {

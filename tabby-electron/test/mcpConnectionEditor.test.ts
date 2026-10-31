@@ -91,6 +91,47 @@ test('root group controls have two states and search preserves ancestor navigati
     assert.deepEqual(editor.navigation.map(entry => entry.group.id), ['root', 'other'])
 })
 
+test('cyclic branches remain searchable beside valid roots without revealing collapsed normal children', () => {
+    const permissions = newMCPPermissions()
+    permissions.groups.a = { access: true }
+    permissions.connections.cyclic = { included: true, overrides: { access: true } }
+    permissions.connections.regular = { included: true, overrides: {} }
+    const editor = new MCPConnectionEditor(permissions, {
+        groups: [
+            { id: 'built-in', name: 'Built-in' },
+            { id: 'normal', name: 'Normal', parentId: 'built-in' },
+            { id: 'hidden', name: 'Hidden child', parentId: 'normal' },
+            // The first disconnected item can be a descendant of the cycle.
+            { id: 'cycle-child', name: 'Cycle child', parentId: 'a' },
+            { id: 'a', name: 'Loop A', parentId: 'b' },
+            { id: 'b', name: 'Loop B', parentId: 'a' },
+        ],
+        connections: [
+            { id: 'cyclic', name: 'Cyclic connection', type: 'ssh', group: 'a' },
+            { id: 'regular', name: 'Regular connection', type: 'ssh', group: 'hidden' },
+        ],
+    })
+    editor.collapsedNavigation.add('normal')
+    assert.deepEqual(editor.navigation.map(entry => entry.group.id), ['built-in', 'normal', 'b', 'a', 'cycle-child'])
+    assert.equal(editor.includedConnections('a').length, 1)
+    assert.equal(editor.includedConnections('b').length, 1)
+    assert.equal(editor.includedConnections('built-in').length, 1)
+    editor.search = 'Loop A'
+    assert.deepEqual(editor.navigation.map(entry => entry.group.id), ['b', 'a', 'cycle-child'])
+    editor.selectedGroupId = 'a'
+    const connection = editor.rows.find(row => row.connection?.id === 'cyclic')!
+    assert.equal(editor.effective(connection, 'access'), false, 'displaying damaged ancestry never grants access')
+    editor.setIncluded(connection, false)
+    assert.equal(editor.includedConnections('a').length, 0)
+    assert.equal(editor.includedConnections('b').length, 0)
+    assert.equal(editor.included('regular'), true)
+    editor.search = ''
+    assert.equal(editor.navigation.some(entry => entry.group.id === 'hidden'), false)
+    assert.equal(editor.collapsedNavigation.has('normal'), true)
+    editor.collapsedNavigation.add('b')
+    assert.deepEqual(editor.navigation.map(entry => entry.group.id), ['built-in', 'normal', 'b'])
+})
+
 test('scope reset affects only included connection overrides and row reset can clear excluded overrides', () => {
     const editor = setup()
     const templates = JSON.stringify(editor.permissions.groups)
