@@ -163,6 +163,26 @@ test('revoking an operation during an asynchronous read suppresses its result', 
     } finally { await server.stop() }
 })
 
+test('the HTTP envelope accepts a complete 4 MiB base64 upload and rejects oversized bodies', async () => {
+    const { server, token, state } = setup()
+    token.groups.group = { upload: true }
+    try {
+        await server.start(null, null)
+        const data = Buffer.alloc(4 * 1024 * 1024, 255).toString('base64')
+        const result = await rpc(server, 'tools/call', { name: 'upload_file', arguments: { connectionId: 'one', path: '/file', data } })
+        assert.equal(result.status, 200)
+        assert.equal(result.body.result.isError, undefined)
+        assert.deepEqual(state.calls, ['upload_file'])
+        const response = await fetch(server.address!, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${bearer}`, 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream' },
+            body: ' '.repeat(6 * 1024 * 1024 + 1),
+        })
+        assert.equal(response.status, 413)
+        assert.deepEqual(state.calls, ['upload_file'], 'oversized requests never reach connection operations')
+    } finally { await server.stop() }
+})
+
 test('tool results filter connections even when the client supplies group parameters', async () => {
     const { server } = setup()
     try {

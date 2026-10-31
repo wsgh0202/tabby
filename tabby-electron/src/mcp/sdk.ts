@@ -20,7 +20,7 @@ export const { Server } = require('@modelcontextprotocol/sdk/server/index.js') a
 }
 
 export const { StreamableHTTPServerTransport } = require('@modelcontextprotocol/sdk/server/streamableHttp.js') as {
-    StreamableHTTPServerTransport: new (options: { sessionIdGenerator: undefined, enableJsonResponse: boolean }) => SDKTransport
+    StreamableHTTPServerTransport: new (options: { sessionIdGenerator: undefined, enableJsonResponse: boolean, maxRequestBodySize: number }) => SDKTransport
 }
 
 export const { CallToolRequestSchema, ListToolsRequestSchema } = require('@modelcontextprotocol/sdk/types.js') as {

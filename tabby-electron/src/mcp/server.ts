@@ -167,7 +167,9 @@ export class MCPHTTPServer {
                 return { isError: true, content: [{ type: 'text', text: error instanceof MCPToolError ? error.message : 'Tool denied or invalid arguments' }] }
             }
         })
-        const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true })
+        // A 4 MiB file expands to roughly 5.33 MiB in base64. Bound the whole
+        // envelope while allowing every payload advertised by upload_file.
+        const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true, maxRequestBodySize: 6 * 1024 * 1024 })
         response.once('close', () => { server.close().catch(() => undefined) })
         await server.connect(transport)
         await transport.handleRequest(request, response)
