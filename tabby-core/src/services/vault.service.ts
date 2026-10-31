@@ -1,3 +1,4 @@
+import { marker as _ } from '@biesbjerg/ngx-translate-extract-marker'
 import * as crypto from 'crypto'
 import { promisify } from 'util'
 import { Injectable, NgZone } from '@angular/core'
@@ -184,7 +185,7 @@ export class VaultService {
             const modal = this.ngbModal.open(UnlockVaultModalComponent)
             const result = await modal.result.catch(() => null)
             if (!result) {
-                throw new Error('Vault unlock cancelled')
+                throw new Error(_('Vault unlock cancelled'))
             }
             const { passphrase, rememberFor } = result
             setTimeout(() => {

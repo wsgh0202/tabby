@@ -333,3 +333,7 @@ msgstr "View connections in a group"
 #: tabby-electron/src/components/mcpSettingsTab.component.pug
 msgid "View details"
 msgstr "View details"
+
+#: tabby-core/src/services/vault.service.ts
+msgid "Vault unlock cancelled"
+msgstr "Vault unlock cancelled"

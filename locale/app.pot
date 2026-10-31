@@ -1551,3 +1551,7 @@ msgstr ""
 #: tabby-electron/src/components/mcpSettingsTab.component.pug
 msgid "View details"
 msgstr ""
+
+#: tabby-core/src/services/vault.service.ts
+msgid "Vault unlock cancelled"
+msgstr ""

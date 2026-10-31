@@ -13,6 +13,7 @@ function setup () {
         getCatalog: async () => ({ groups: [], connections: [] }),
         createToken: async (name, permissions) => { calls.push({ name, permissions }); return 'plaintext-once' },
         updateToken: async (id, permissions, name) => { calls.push({ id, permissions, name }) },
+        unlockVault: async () => { throw new Error('Vault unlock cancelled') },
     }
     const config = { fail: false, save: async () => { if (config.fail) { throw new Error('Write failed') }; calls.push('save') } }
     let editor: MCPTokenModalComponent
@@ -57,6 +58,13 @@ test('failed settings writes restore previous values and clear the busy state', 
     assert.equal(mcp.settings.enabled, false)
     assert.equal(mcp.settings.port, null)
     assert.equal(component.error, 'Write failed')
+    assert.equal(component.busy, false)
+})
+
+test('cancelled vault unlock exposes a translatable message and clears busy state', async () => {
+    const { component } = setup()
+    await component.unlockVault()
+    assert.equal(component.error, 'Vault unlock cancelled')
     assert.equal(component.busy, false)
 })
 

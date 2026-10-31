@@ -18,6 +18,9 @@ test('MCP settings and modal have English and Chinese translations with matching
         extractor.createJsParser([JsExtractors.callExpression('_', { arguments: { text: 0 } })])
             .parseString(readFileSync(source, 'utf8'), source)
     }
+    const vaultSource = fileURLToPath(new URL('../../tabby-core/src/services/vault.service.ts', import.meta.url))
+    extractor.createJsParser([JsExtractors.callExpression('_', { arguments: { text: 0 } })])
+        .parseString(readFileSync(vaultSource, 'utf8'), vaultSource)
     for (const locale of ['en-US', 'zh-CN']) {
         const catalog = gettext.po.parse(readFileSync(new URL(`../../locale/${locale}.po`, import.meta.url))).translations['']
         for (const { text } of extractor.getMessages()) {
