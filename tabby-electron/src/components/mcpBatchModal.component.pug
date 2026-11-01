@@ -1,0 +1,22 @@
+.modal-header
+    .modal-identity
+        small.text-muted {{scopeName}}
+        h3#mcp-batch-title.m-0(translate) Batch configure connection capabilities
+    button.btn.btn-secondary.modal-close(type='button', (click)='modal.dismiss()', [attr.aria-label]='"Close" | translate')
+        i.fas.fa-times(aria-hidden='true')
+.modal-body
+    p.text-muted(translate) Applies independent overrides to the selected existing connections. Group templates and new connections are unaffected.
+    .batch-capabilities
+        .batch-capability(*ngFor='let capability of capabilities')
+            .capability-title
+                label
+                    input.form-check-input.me-2(type='checkbox', [ngModel]='enabled.includes(capability.id)', (ngModelChange)='toggle(capability.id, $event)')
+                    span {{capability.label | translate}}
+                mcp-capability-help([capability]='capability')
+            small.text-muted {{capability.description | translate}}
+    h5.mt-4(translate) Apply to these connections
+    ul.batch-targets
+        li(*ngFor='let connection of connections') {{connectionPath(connection)}}
+.modal-footer
+    button.btn.btn-secondary(type='button', (click)='modal.dismiss()', translate) Cancel
+    button.btn.btn-primary(type='button', (click)='modal.close(enabled)', [disabled]='!connections.length', translate='Apply to {count} connections', [translateParams]='{count: connections.length}')

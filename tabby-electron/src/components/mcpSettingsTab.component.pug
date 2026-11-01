@@ -52,11 +52,8 @@ section
                 .token-name {{tokenLabel(token)}}
                 code.text-muted(*ngIf='token.name && token.preview') {{token.preview}}
                 .token-summary.text-muted
-                    span(translate='Capabilities: {count} / {total}', [translateParams]='{count: token.tools.length, total: toolCount}')
-                    span(*ngIf='token.groups.mode === "all"', translate) All groups
-                    span(*ngIf='token.groups.mode === "custom"', translate='Groups: {count}', [translateParams]='{count: token.groups.ids.length}')
-                    span(*ngIf='token.connections.mode === "all"', translate) All connections
-                    span(*ngIf='token.connections.mode === "custom"', translate='Individual connections: {count}', [translateParams]='{count: token.connections.ids.length}')
+                    span(translate='Capabilities: {count} / {total}', [translateParams]='{count: token.capabilities.length, total: toolCount}')
+                    span(translate='Included connections: {count}', [translateParams]='{count: includedConnectionCount(token)}')
             .token-actions
                 button.btn.btn-secondary(type='button', (click)='openEditor(token)', [disabled]='busy || editorOpen || !!createdToken', translate) View details
                 button.btn.btn-danger(type='button', (click)='removeToken(token)', [disabled]='busy || editorOpen', translate) Revoke

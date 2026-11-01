@@ -1,0 +1,75 @@
+.modal-header
+    .modal-identity
+        small.text-muted
+            span(translate) Connection operations
+            span(*ngIf='tokenName') : {{tokenName}}
+        h3#mcp-connections-title.m-0(translate) Access permissions and connection capabilities
+    button.btn.btn-secondary.modal-close(type='button', (click)='modal.dismiss()', [attr.aria-label]='"Close" | translate')
+        i.fas.fa-times(aria-hidden='true')
+
+.policy-layout(*ngIf='editor')
+    nav.group-navigation([attr.aria-label]='navigationLabel | translate')
+        .group-navigation-heading
+            h5.mb-2(translate) Connection groups
+            input.form-control(type='search', [(ngModel)]='editor.search', [placeholder]='searchLabel | translate', [attr.aria-label]='searchLabel | translate')
+        .group-tree
+            .group-navigation-row(*ngFor='let entry of editor.navigation; trackBy: trackGroup', [class.selected]='editor.selectedGroupId === entry.group.id', [style.padding-inline-start.rem]='0.25 + entry.depth * 0.8')
+                button.btn.expand(type='button', *ngIf='entry.hasChildren', (click)='toggleCollapsed(editor.collapsedNavigation, entry.group.id)', [attr.aria-expanded]='!editor.collapsedNavigation.has(entry.group.id)', [attr.aria-label]='(editor.collapsedNavigation.has(entry.group.id) ? "Expand" : "Collapse") | translate')
+                    i.fas(aria-hidden='true', [class.fa-chevron-right]='editor.collapsedNavigation.has(entry.group.id)', [class.fa-chevron-down]='!editor.collapsedNavigation.has(entry.group.id)')
+                span.expand-placeholder(*ngIf='!entry.hasChildren')
+                button.btn.group-link(type='button', (click)='editor.selectedGroupId = entry.group.id', [attr.aria-current]='editor.selectedGroupId === entry.group.id ? "location" : null')
+                    profile-icon([icon]='groupIcon(entry.group, editor.collapsedNavigation.has(entry.group.id))', [color]='entry.group.color ?? undefined')
+                    span.group-name {{entry.group.name}}
+                    small.group-count {{editor.includedConnections(entry.group.id).length}}/{{editor.connectionsInGroup(entry.group.id).length}}
+            p.text-muted.p-2(*ngIf='!editor.navigation.length', translate) No groups found.
+    .policy-page
+        .policy-toolbar
+            h4.mb-0 {{editor.selectedGroup?.name}}
+            .toolbar-actions
+                button.btn.btn-secondary(type='button', (click)='openBatch()', [disabled]='!editor.includedConnections().length', translate) Batch configure
+                button.btn.btn-secondary(type='button', (click)='editor.resetIncluded()', [disabled]='!editor.canReset', translate) Reset
+        .policy-scroll
+            table.policy-table(*ngIf='editor.selectedGroup')
+                colgroup
+                    col.name-column
+                    col.capability-column(*ngFor='let capability of capabilities')
+                    col.row-actions
+                thead
+                    tr
+                        th.name-column(scope='col', translate) Group / connection
+                        th.capability-column(scope='col', *ngFor='let capability of capabilities')
+                            .capability-heading
+                                span {{capability.label | translate}}
+                                mcp-capability-help([capability]='capability')
+                        th.row-actions(scope='col')
+                tbody
+                    tr(*ngFor='let row of editor.rows; trackBy: trackRow', [class.group-row]='!!row.group', [class.current-group]='row.group && row.id === editor.selectedGroupId', [class.excluded]='row.connection && !editor.included(row.id)')
+                        th.name-column(scope='row')
+                            .policy-name([style.padding-inline-start.rem]='0.75 + row.depth * 0.8')
+                                input.form-check-input.scope-checkbox(#scopeCheckbox, type='checkbox', [checked]='editor.selected(row)', [indeterminate]='editor.partiallySelected(row)', [disabled]='!!row.group && !editor.connectionsInGroup(row.id).length', (change)='editor.setIncluded(row, $any($event.target).checked)', [attr.aria-label]='((row.group ? includeGroupLabel : includeConnectionLabel) | translate) + ": " + row.name')
+                                button.btn.expand(type='button', *ngIf='row.group', (click)='toggleCollapsed(editor.collapsedRows, row.id)', [attr.aria-expanded]='!editor.collapsedRows.has(row.id)', [attr.aria-label]='(editor.collapsedRows.has(row.id) ? "Expand" : "Collapse") | translate')
+                                    i.fas(aria-hidden='true', [class.fa-chevron-right]='editor.collapsedRows.has(row.id)', [class.fa-chevron-down]='!editor.collapsedRows.has(row.id)')
+                                profile-icon([icon]='row.group ? groupIcon(row.group, editor.collapsedRows.has(row.id)) : row.connection?.icon || "fas fa-terminal"', [color]='row.group?.color ?? row.connection?.color ?? undefined')
+                                span.connection-name {{row.name}}
+                        td(*ngFor='let capability of capabilities')
+                            button.permission-control(type='button', role='checkbox', [attr.aria-checked]='editor.effective(row, capability.id)', [class.checked]='editor.effective(row, capability.id)', [class.inherited]='editor.inherited(row, capability.id)', [disabled]='!!row.connection && !editor.included(row.id)', (click)='editor.cycle(row, capability.id)', [attr.aria-label]='row.name + ": " + (capability.label | translate) + ", " + ((editor.inherited(row, capability.id) ? inheritedLabel : independentLabel) | translate) + ", " + ((editor.effective(row, capability.id) ? enabledLabel : disabledLabel) | translate)')
+                                span.permission-mark(aria-hidden='true')
+                                    i.fas.fa-check(*ngIf='editor.effective(row, capability.id)')
+                                i.source-icon.fas(aria-hidden='true', [class.fa-link]='editor.inherited(row, capability.id)', [class.fa-folder]='row.group && !editor.parent(row.group)', [class.fa-pen]='!editor.inherited(row, capability.id) && (!row.group || editor.parent(row.group))')
+                        td.row-actions
+                            button.btn.row-reset(type='button', *ngIf='row.connection', (click)='resetRow(row.id, scopeCheckbox)', [disabled]='!editor.hasOverrides(row.id)', [attr.aria-label]='resetOverridesLabel | translate')
+                                i.fas.fa-undo(aria-hidden='true')
+            p.text-muted.p-3(*ngIf='!editor.selectedGroup', translate) No groups available.
+
+.policy-legend
+    .legend-item
+        span.legend-source.inherited(aria-hidden='true')
+            i.fas.fa-link
+        span(translate) Inherited: follows its direct group
+    .legend-item
+        span.legend-source(aria-hidden='true')
+            i.fas.fa-pen
+        span(translate) Independent: does not follow group changes
+.modal-footer
+    button.btn.btn-secondary(type='button', (click)='modal.dismiss()', translate) Cancel
+    button.btn.btn-primary(type='button', (click)='modal.close(editor.permissions)', translate) Confirm configuration

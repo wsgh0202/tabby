@@ -11,14 +11,21 @@
 
 .modal-header {
     align-items: flex-start;
+    justify-content: space-between;
     gap: 1rem;
 }
 
 .token-identity {
+    flex: 1 1 auto;
     min-width: 0;
     overflow-wrap: anywhere;
 
     h3 { margin-top: .25rem !important; }
+}
+
+.token-modal-close {
+    flex: 0 0 auto;
+    margin-inline-start: auto;
 }
 
 .token-layout {
@@ -85,29 +92,12 @@ section {
     gap: .25rem;
 }
 
-.scope-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: start;
-    gap: 1rem;
-}
-
-.scope-panel {
+.capability-package {
     border: 1px solid var(--theme-bg-more-2);
     border-radius: .375rem;
     min-width: 0;
-}
-
-.scope-heading {
-    padding: .75rem;
-    margin: 0;
+    padding: 0 1rem 1rem;
     background: var(--theme-bg-less);
-}
-
-.scope-body { padding: .75rem; }
-
-@media (max-width: 991px) {
-    .scope-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 575px) {

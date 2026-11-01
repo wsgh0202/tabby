@@ -1,27 +1,21 @@
 import { marker as _ } from '@biesbjerg/ngx-translate-extract-marker'
-import { Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core'
-import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap'
-import { MCPCatalog, MCPConnection, MCPPermissions, MCP_TOOLS, newMCPPermissions } from '../mcp/access'
+import { Component, ElementRef, Input, OnDestroy, OnInit, ViewChild } from '@angular/core'
+import { NgbActiveModal, NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap'
+import { MCPCatalog, MCPPermissions, newMCPPermissions } from '../mcp/access'
 import { MCPToken } from '../mcp/tokens'
 import { getMCPTokenLabel } from '../mcp/tokenDisplay'
 import { MCPService } from '../services/mcp.service'
-
-const TOOL_LABELS = {
-    list_connection_groups: _('View connection groups'),
-    list_connections: _('View connections'),
-    list_group_connections: _('View connections in a group'),
-}
+import { MCPConnectionsModalComponent } from './mcpConnectionsModal.component'
 
 /** @hidden */
 @Component({
     templateUrl: './mcpTokenModal.component.pug',
     styleUrls: ['./mcpTokenModal.component.scss'],
 })
-export class MCPTokenModalComponent implements OnInit {
+export class MCPTokenModalComponent implements OnInit, OnDestroy {
     @Input() token?: MCPToken
     @Input() catalog: MCPCatalog = { groups: [], connections: [] }
     @ViewChild('formPage') formPage: ElementRef<HTMLElement>
-    tools = MCP_TOOLS.map(tool => ({ ...tool, label: TOOL_LABELS[tool.name] }))
     navigationLabel = _('Token settings navigation')
     permissions: MCPPermissions = newMCPPermissions()
     name = ''
@@ -29,21 +23,63 @@ export class MCPTokenModalComponent implements OnInit {
     busy = false
     error: string|null = null
     discardPrompt = false
+    connectionsOpen = false
     private original = ''
     private discardConfirmed = false
+    private connectionsModal: NgbModalRef|null = null
+    private destroyed = false
 
     constructor (
         private mcp: MCPService,
         private modal: NgbActiveModal,
+        private ngbModal: NgbModal,
     ) { }
 
     ngOnInit (): void {
         this.name = this.token?.name ?? ''
         if (this.token) {
-            const { tools, groups, connections } = this.token
-            this.permissions = JSON.parse(JSON.stringify({ tools, groups, connections }))
+            const { capabilities, groups, connections } = this.token
+            this.permissions = JSON.parse(JSON.stringify({ capabilities, groups, connections }))
         }
         this.original = this.snapshot()
+    }
+
+    ngOnDestroy (): void {
+        this.destroyed = true
+        this.connectionsModal?.close(null)
+    }
+
+    get connectionOperationsEnabled (): boolean {
+        return this.permissions.capabilities.includes('connection_operations')
+    }
+
+    setConnectionOperations (enabled: boolean): void {
+        this.permissions.capabilities = enabled ? ['connection_operations'] : []
+    }
+
+    async configureConnections (): Promise<void> {
+        if (this.busy || this.connectionsOpen) { return }
+        this.connectionsOpen = true
+        const ref = this.ngbModal.open(MCPConnectionsModalComponent, {
+            size: 'xl',
+            windowClass: 'mcp-connections-window',
+            backdrop: 'static',
+            ariaLabelledBy: 'mcp-connections-title',
+        })
+        const editor = ref.componentInstance as MCPConnectionsModalComponent
+        editor.permissions = this.permissions
+        editor.catalog = this.catalog
+        editor.tokenName = this.displayName ?? ''
+        this.connectionsModal = ref
+        try {
+            const permissions = await ref.result
+            if (permissions && !this.destroyed) { this.permissions = permissions }
+        } catch {
+            // Discarding connection edits leaves the token draft untouched.
+        } finally {
+            this.connectionsModal = null
+            this.connectionsOpen = false
+        }
     }
 
     get displayName (): string|null {
@@ -91,20 +127,6 @@ export class MCPTokenModalComponent implements OnInit {
         } finally {
             this.busy = false
         }
-    }
-
-    toggleSelection (items: string[], id: string, selected: boolean): void {
-        const index = items.indexOf(id)
-        if (selected && index === -1) { items.push(id) }
-        if (!selected && index !== -1) { items.splice(index, 1) }
-    }
-
-    grantedByGroup (connection: MCPConnection): boolean {
-        return this.permissions.groups.mode === 'all' || this.permissions.groups.ids.includes(connection.group)
-    }
-
-    groupName (id: string): string {
-        return this.catalog.groups.find(group => group.id === id)?.name ?? id
     }
 
     navigate (section: HTMLElement): void {

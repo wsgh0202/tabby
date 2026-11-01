@@ -2,7 +2,7 @@ import { marker as _ } from '@biesbjerg/ngx-translate-extract-marker'
 import { Component, HostBinding, OnDestroy } from '@angular/core'
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap'
 import { ConfigService, PlatformService, VaultService } from 'tabby-core'
-import { MCP_TOOLS } from '../mcp/access'
+import { MCP_GLOBAL_CAPABILITIES } from '../mcp/capabilityLabels'
 import { MCPToken } from '../mcp/tokens'
 import { MCPService } from '../services/mcp.service'
 import { getMCPTokenLabel } from '../mcp/tokenDisplay'
@@ -16,7 +16,7 @@ import { MCPTokenModalComponent } from './mcpTokenModal.component'
 })
 export class MCPSettingsTabComponent implements OnDestroy {
     @HostBinding('class.content-box') contentBox = true
-    toolCount = MCP_TOOLS.length
+    toolCount = MCP_GLOBAL_CAPABILITIES.length
     tokenLabel = getMCPTokenLabel
     port: number|null
     editorOpen = false
@@ -45,6 +45,10 @@ export class MCPSettingsTabComponent implements OnDestroy {
     get previewAddress (): string {
         const port = this.port ?? this.mcp.settings.lastRandomPort
         return port ? `http://127.0.0.1:${port}/mcp` : 'http://127.0.0.1:<automatic>/mcp'
+    }
+
+    includedConnectionCount (token: MCPToken): number {
+        return Object.values(token.connections).filter(connection => connection.included).length
     }
 
     async saveSettings (enabled = this.mcp.settings.enabled): Promise<void> {

@@ -8,7 +8,7 @@ import { GettextExtractor, HtmlExtractors, JsExtractors } from 'gettext-extracto
 
 test('MCP settings and modal have English and Chinese translations with matching parameters', () => {
     const extractor = new GettextExtractor()
-    for (const name of ['mcpSettingsTab', 'mcpTokenModal']) {
+    for (const name of ['mcpSettingsTab', 'mcpTokenModal', 'mcpConnectionsModal', 'mcpBatchModal', 'mcpCapabilityHelp']) {
         const file = fileURLToPath(new URL(`../src/components/${name}.component.pug`, import.meta.url))
         extractor.createHtmlParser([
             HtmlExtractors.elementContent('translate, [translate=""]'),
@@ -18,6 +18,14 @@ test('MCP settings and modal have English and Chinese translations with matching
         extractor.createJsParser([JsExtractors.callExpression('_', { arguments: { text: 0 } })])
             .parseString(readFileSync(source, 'utf8'), source)
     }
+    for (const name of ['access', 'capabilityLabels']) {
+        const source = fileURLToPath(new URL(`../src/mcp/${name}.ts`, import.meta.url))
+        extractor.createJsParser([JsExtractors.callExpression('_', { arguments: { text: 0 } })])
+            .parseString(readFileSync(source, 'utf8'), source)
+    }
+    const vaultSource = fileURLToPath(new URL('../../tabby-core/src/services/vault.service.ts', import.meta.url))
+    extractor.createJsParser([JsExtractors.callExpression('_', { arguments: { text: 0 } })])
+        .parseString(readFileSync(vaultSource, 'utf8'), vaultSource)
     for (const locale of ['en-US', 'zh-CN']) {
         const catalog = gettext.po.parse(readFileSync(new URL(`../../locale/${locale}.po`, import.meta.url))).translations['']
         for (const { text } of extractor.getMessages()) {
