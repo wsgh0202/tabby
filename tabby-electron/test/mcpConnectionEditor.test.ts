@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import '@angular/compiler'
+import { preventOverflow } from '@popperjs/core'
 import { MCPCatalog, newMCPPermissions } from '../src/mcp/access'
 import { MCPConnectionEditor } from '../src/mcp/connectionEditor'
 import { MCPConnectionsModalComponent } from '../src/components/mcpConnectionsModal.component'
@@ -275,12 +276,16 @@ test('pinned help ignores its opening click and clicks inside its popover but cl
 test('capability help constrains Popper to the active modal viewport', () => {
     const dialog = { getBoundingClientRect: () => ({ width: 300, height: 240 }) }
     const component = new MCPCapabilityHelpComponent({ nativeElement: { closest: () => dialog } } as any, {} as any)
-    const options = component.popperOptions({})
-    const overflow = options.modifiers!.find(modifier => modifier.name === 'preventOverflow')!
+    // Ng-bootstrap supplies a no-op with the same name before applying our options.
+    const options = component.popperOptions({ modifiers: [{ name: 'preventOverflow', enabled: true, phase: 'main', fn: () => {} }] })
+    const overflow = options.modifiers!.filter(modifier => modifier.name === 'preventOverflow').pop()!
+    assert.equal(overflow.fn, preventOverflow.fn, 'restore the real boundary constraint')
     assert.equal(overflow.options!.boundary, dialog)
+    assert.equal(overflow.options!.tether, false, 'a clipped trigger must not pull help outside the modal')
     const size = options.modifiers!.find(modifier => modifier.name === 'mcpSize')!
     const state = { styles: { popper: {} as any } }
     size.fn!({ state } as any)
-    assert.equal(state.styles.popper.maxWidth, 'min(23rem, 284px)')
+    assert.equal(state.styles.popper.maxWidth, 'min(23.75rem, 284px)')
     assert.equal(state.styles.popper.maxHeight, '224px')
+    assert.equal(state.styles.popper.overflowY, undefined, 'the external arrow must not become scrollable content')
 })

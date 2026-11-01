@@ -2992,3 +2992,15 @@ msgstr "MCP 权限配置无效，请重新配置此令牌后再使用。"
 
 msgid "MCP token records are invalid. Review them in the configuration file."
 msgstr "MCP 令牌记录无效，请在配置文件中检查。"
+
+msgid "Capability description"
+msgstr "能力说明"
+
+msgid "Caution"
+msgstr "注意"
+
+msgid "Agent side"
+msgstr "Agent 侧"
+
+msgid "Connection side"
+msgstr "连接侧"

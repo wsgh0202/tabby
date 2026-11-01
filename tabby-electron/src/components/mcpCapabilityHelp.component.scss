@@ -6,24 +6,60 @@
     --bs-popover-bg: var(--theme-bg);
     --bs-popover-color: var(--theme-fg);
     --bs-popover-border-color: var(--theme-bg-more-2);
-    --bs-popover-header-bg: var(--theme-bg-more);
+    --bs-popover-header-bg: var(--theme-bg);
     --bs-popover-header-color: var(--theme-fg);
-    max-width: min(23rem, calc(100vw - 3rem));
+    display: flex;
+    flex-direction: column;
+    max-width: min(23.75rem, calc(100vw - 3rem));
+    padding: 1rem 1.125rem;
+    border-radius: .5rem;
+    overflow: visible;
     background: var(--theme-bg);
     color: var(--theme-fg);
     border-color: var(--theme-bg-more-2);
+    box-shadow: 0 .5rem 1.75rem rgba(0, 0, 0, .25);
 
     .popover-header {
-        background: var(--theme-bg-more);
+        flex-shrink: 0;
+        padding: 0 0 .5625rem;
+        background: transparent;
         color: inherit;
-        border-color: var(--theme-bg-more-2);
+        border: 0;
+        font-size: .875rem;
     }
 
-    .popover-body { padding: .9rem; color: inherit; line-height: 1.6; }
+    .capability-help-heading { display: flex; align-items: center; gap: .5rem; color: var(--theme-primary); }
+    .capability-help-heading > i { flex-shrink: 0; }
+
+    .popover-body {
+        min-height: 0;
+        padding: 0;
+        overflow-x: hidden;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        overflow-wrap: anywhere;
+        color: inherit;
+        font-size: .75rem;
+        line-height: 1.7;
+    }
+
+    .capability-direction {
+        display: flex;
+        align-items: center;
+        gap: .5625rem;
+        margin-top: .8125rem;
+        padding-top: .5625rem;
+        border-top: 1px solid var(--theme-bg-more-2);
+        color: var(--theme-fg-more-2);
+    }
 
     .capability-warning {
-        color: #e7b35d;
-        padding-top: .75rem;
-        border-top: 1px solid var(--theme-bg-more-2);
+        margin-top: .75rem;
+        padding: .625rem .75rem;
+        border-radius: .3125rem;
+        color: color-mix(in srgb, var(--bs-warning) 60%, var(--theme-fg));
+        background: color-mix(in srgb, var(--bs-warning) 12%, var(--theme-bg));
+
+        strong { display: flex; align-items: center; gap: .375rem; margin-bottom: .3125rem; }
     }
 }
