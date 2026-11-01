@@ -353,12 +353,22 @@ export class MCPConnectionsService {
     private async localTransfer (target: string, data: Buffer|undefined, scope: TransferScope, authorize: () => Promise<boolean>): Promise<Buffer|undefined> {
         await this.check(authorize)
         if (data) {
+            const existing = await fs.lstat(target).catch(error => {
+                if (error.code === 'ENOENT') { return null }
+                throw error
+            })
             const temporary = path.join(path.dirname(target), `.tabby-mcp-${randomUUID()}`)
             this.own(scope, async () => { await fs.unlink(temporary).catch(() => undefined) })
             try {
                 await this.check(authorize)
                 await fs.writeFile(temporary, data, { flag: 'wx', mode: 0o600 })
                 await this.check(authorize)
+                if (process.platform !== 'win32' && existing?.isFile()) {
+                    // Apply the existing mode after creation so the process umask
+                    // cannot strip executable/shared access from a replacement.
+                    await fs.chmod(temporary, existing.mode & 0o7777)
+                    await this.check(authorize)
+                }
                 await fs.rename(temporary, target)
             } finally { await fs.unlink(temporary).catch(() => undefined) }
             return undefined

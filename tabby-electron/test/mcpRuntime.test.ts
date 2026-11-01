@@ -233,6 +233,26 @@ test('local file transfer uses MCP payload bytes without requiring a terminal', 
     }
 })
 
+test('local uploads preserve the existing executable mode on POSIX', { skip: process.platform === 'win32' }, async () => {
+    const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'tabby-mcp-mode-test-'))
+    const target = path.join(directory, 'run.sh')
+    const profile = { id: 'local', type: 'local', name: 'Shell', options: { cwd: directory } }
+    const fixture = adapterFixture(profile)
+    try {
+        await fs.writeFile(target, '#!/bin/sh\necho old\n')
+        await fs.chmod(target, 0o755)
+        const data = Buffer.from('#!/bin/sh\necho updated\n')
+        await fixture.adapter.callOperation('token', profile, 'upload_file', { path: 'run.sh', data: data.toString('base64') }, async () => true)
+        assert.deepEqual(await fs.readFile(target), data)
+        assert.equal((await fs.stat(target)).mode & 0o7777, 0o755)
+        assert.deepEqual(await fs.readdir(directory), ['run.sh'])
+    } finally {
+        await fixture.adapter.disposeAll()
+        await fs.unlink(target).catch(() => undefined)
+        await fs.rmdir(directory)
+    }
+})
+
 test('unsupported file providers fail explicitly and configuration saves roll back', async () => {
     const profile = { id: 'telnet', type: 'telnet', name: 'Telnet', options: { host: 'localhost', port: 23 } }
     const fixture = adapterFixture(profile)
