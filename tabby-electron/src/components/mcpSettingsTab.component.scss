@@ -18,10 +18,16 @@
 
 .section-heading { margin-bottom: 1rem; }
 
-.port-line {
+.port-line, .host-line {
     flex-wrap: wrap;
 
     .header { flex: 1 1 16rem; }
+}
+
+.host-input {
+    width: 20rem;
+    max-width: 100%;
+    flex-shrink: 0;
 }
 
 .port-input {
@@ -78,10 +84,10 @@
 .token-actions { flex-wrap: wrap; }
 
 @media (max-width: 575px) {
-    .port-line {
+    .port-line, .host-line {
         flex-wrap: wrap;
         gap: .75rem;
     }
 
-    .port-input { width: 100%; }
+    .port-input, .host-input { width: 100%; }
 }

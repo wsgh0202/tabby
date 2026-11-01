@@ -95,8 +95,28 @@ msgid "List all accessible connections."
 msgstr "List all accessible connections."
 
 #: tabby-electron/src/components/mcpSettingsTab.component.pug
-msgid "Listen on this computer only. Requests require a bearer token and an unlocked vault."
-msgstr "Listen on this computer only. Requests require a bearer token and an unlocked vault."
+msgid "Listen IP"
+msgstr "Listen IP"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Requests require a bearer token and an unlocked vault."
+msgstr "Requests require a bearer token and an unlocked vault."
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Use 127.0.0.1 for local access, a LAN IP for a specific interface, or 0.0.0.0 for all IPv4 interfaces."
+msgstr "Use 127.0.0.1 for local access, a LAN IP for a specific interface, or 0.0.0.0 for all IPv4 interfaces."
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Select a trusted network. LAN requests use unencrypted HTTP."
+msgstr "Select a trusted network. LAN requests use unencrypted HTTP."
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "When listening on all interfaces, connect remotely using this computer's LAN IP."
+msgstr "When listening on all interfaces, connect remotely using this computer's LAN IP."
+
+#: tabby-electron/src/components/mcpSettingsTab.component.ts
+msgid "MCP listen IP must be a valid IPv4 or IPv6 address"
+msgstr "MCP listen IP must be a valid IPv4 or IPv6 address"
 
 #: tabby-electron/src/services/mcp.service.ts
 msgid "MCP port is already in use"

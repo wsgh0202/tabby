@@ -97,8 +97,28 @@ msgid "List all accessible connections."
 msgstr "列出所有可访问的连接。"
 
 #: tabby-electron/src/components/mcpSettingsTab.component.pug
-msgid "Listen on this computer only. Requests require a bearer token and an unlocked vault."
-msgstr "仅监听本机。请求需要 Bearer 令牌，且保险库必须已解锁。"
+msgid "Listen IP"
+msgstr "监听 IP"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Requests require a bearer token and an unlocked vault."
+msgstr "请求需要 Bearer 令牌，且保险库必须已解锁。"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Use 127.0.0.1 for local access, a LAN IP for a specific interface, or 0.0.0.0 for all IPv4 interfaces."
+msgstr "使用 127.0.0.1 供本机访问、内网 IP 监听指定网卡，或使用 0.0.0.0 监听所有 IPv4 网卡。"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "Select a trusted network. LAN requests use unencrypted HTTP."
+msgstr "请选择可信网络。内网请求使用未加密的 HTTP。"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.pug
+msgid "When listening on all interfaces, connect remotely using this computer's LAN IP."
+msgstr "监听所有网卡时，请使用本机的内网 IP 从远端连接。"
+
+#: tabby-electron/src/components/mcpSettingsTab.component.ts
+msgid "MCP listen IP must be a valid IPv4 or IPv6 address"
+msgstr "MCP 监听 IP 必须是有效的 IPv4 或 IPv6 地址"
 
 #: tabby-electron/src/services/mcp.service.ts
 msgid "MCP port is already in use"

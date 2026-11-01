@@ -9,8 +9,13 @@ section.mcp-section
     .form-line
         .header
             .title(translate) Enable MCP server
-            .description(translate) Listen on this computer only. Requests require a bearer token and an unlocked vault.
-        toggle([ngModel]='mcp.settings.enabled', (ngModelChange)='saveSettings($event)', [disabled]='busy')
+            .description(translate) Requests require a bearer token and an unlocked vault.
+        toggle(#serverEnabled='ngModel', [ngModel]='mcp.settings.enabled', (ngModelChange)='setEnabled($event, serverEnabled)', [disabled]='busy')
+    .form-line.host-line
+        .header
+            label.title(for='mcp-host', translate) Listen IP
+            .description(translate) Use 127.0.0.1 for local access, a LAN IP for a specific interface, or 0.0.0.0 for all IPv4 interfaces.
+        input#mcp-host.form-control.host-input(type='text', [(ngModel)]='host', [disabled]='busy', spellcheck='false', autocomplete='off')
     .form-line.port-line
         .header
             label.title(for='mcp-port', translate) Port
@@ -18,11 +23,13 @@ section.mcp-section
         .port-input
             input#mcp-port.form-control(type='number', min='1', max='65535', [(ngModel)]='port', [disabled]='busy')
             button.btn.btn-secondary(type='button', (click)='saveSettings()', [disabled]='busy', translate) Apply
+    p.text-muted.small.mb-0(translate) Select a trusted network. LAN requests use unencrypted HTTP.
     .server-address
         .address-copy
             span(translate) Server address
             code {{mcp.address || previewAddress}}
         button.btn.btn-secondary(type='button', (click)='copy(mcp.address!)', *ngIf='mcp.address', translate) Copy
+    p.text-muted.small.mt-2.mb-0(*ngIf='wildcardHost', translate) When listening on all interfaces, connect remotely using this computer's LAN IP.
     p.text-muted.mb-0.mt-2(*ngIf='!mcp.address && !mcp.error', translate) Server is stopped or managed by the main window.
 
 .alert.alert-danger(*ngIf='mcp.error', role='alert') {{mcp.error | translate}}

@@ -8,7 +8,7 @@ import { newMCPPermissions } from '../src/mcp/access'
 function setup () {
     const calls: any[] = []
     const mcp = {
-        settings: { enabled: false, port: null as number|null, lastRandomPort: null as number|null, tokens: [] as any[] },
+        settings: { enabled: false, host: '127.0.0.1', port: null as number|null, lastRandomPort: null as number|null, tokens: [] as any[] },
         refresh: async () => { calls.push('refresh') },
         getCatalog: async () => ({ groups: [], connections: [] }),
         createToken: async (name, permissions) => { calls.push({ name, permissions }); return 'plaintext-once' },
@@ -29,7 +29,7 @@ function setup () {
             return ref
         },
     }
-    const component = new MCPSettingsTabComponent(mcp as any, {} as any, config as any, { setClipboard: content => calls.push(content) } as any, ngbModal as any)
+    const component = new MCPSettingsTabComponent(mcp as any, {} as any, config as any, { setClipboard: content => calls.push(content) } as any, ngbModal as any, { detectChanges: () => undefined } as any)
     return { component, mcp, config, calls, modals, get editor () { return editor } }
 }
 
@@ -53,12 +53,107 @@ test('settings preview tracks explicit and remembered ports and validates input'
 test('failed settings writes restore previous values and clear the busy state', async () => {
     const { component, mcp, config } = setup()
     config.fail = true
+    component.host = '192.168.1.20'
     component.port = 12345
     await component.saveSettings(true)
     assert.equal(mcp.settings.enabled, false)
     assert.equal(mcp.settings.port, null)
+    assert.equal(mcp.settings.host, '127.0.0.1')
+    assert.equal(component.host, '192.168.1.20', 'failed persistence preserves the editable draft')
     assert.equal(component.error, 'Write failed')
     assert.equal(component.busy, false)
+})
+
+test('listener IP defaults to loopback and applies normalized IPv4 or IPv6 drafts', async () => {
+    const { component, mcp, calls } = setup()
+    assert.equal(component.host, '127.0.0.1')
+    component.host = ' 192.168.1.20 '
+    component.port = 12345
+    await component.saveSettings()
+    assert.equal(mcp.settings.host, '192.168.1.20')
+    assert.equal(component.host, '192.168.1.20')
+    assert.equal(component.previewAddress, 'http://192.168.1.20:12345/mcp')
+    assert.equal(mcp.settings.enabled, false)
+    assert.deepEqual(calls, ['save', 'refresh'])
+    component.host = '::1'
+    await component.saveSettings(true)
+    assert.equal(mcp.settings.host, '::1')
+    assert.equal(component.previewAddress, 'http://[::1]:12345/mcp')
+})
+
+test('invalid listener IP drafts cannot be applied or enabled and do not break previews', async () => {
+    const { component, mcp, calls } = setup()
+    mcp.settings.host = '192.168.1.20'
+    component.port = 12345
+    for (const host of ['', 'localhost', '192.168.1.999', 'http://127.0.0.1', 'fe80::1%eth0']) {
+        component.host = host
+        assert.equal(component.previewAddress, 'http://192.168.1.20:12345/mcp')
+        await component.saveSettings()
+        assert.equal(component.error, 'MCP listen IP must be a valid IPv4 or IPv6 address')
+        await component.saveSettings(true)
+        assert.equal(component.error, 'MCP listen IP must be a valid IPv4 or IPv6 address')
+        assert.equal(mcp.settings.host, '192.168.1.20')
+        assert.equal(mcp.settings.enabled, false)
+        assert.equal(component.busy, false)
+    }
+    assert.deepEqual(calls, [])
+})
+
+test('wildcard listener previews use reachable loopback URLs and explain LAN addressing', () => {
+    const { component } = setup()
+    component.port = 12345
+    component.host = '0.0.0.0'
+    assert.equal(component.previewAddress, 'http://127.0.0.1:12345/mcp')
+    assert.equal(component.wildcardHost, true)
+    component.host = '::'
+    assert.equal(component.previewAddress, 'http://[::1]:12345/mcp')
+    assert.equal(component.wildcardHost, true)
+    component.host = 'invalid'
+    assert.equal(component.wildcardHost, false)
+})
+
+test('stopping ignores invalid listener drafts without overwriting saved valid settings', async () => {
+    const { component, mcp, calls } = setup()
+    mcp.settings.enabled = true
+    mcp.settings.host = '192.168.1.20'
+    mcp.settings.port = 12345
+    component.host = 'invalid'
+    component.port = 65536
+    await component.saveSettings(false)
+    assert.equal(mcp.settings.enabled, false)
+    assert.equal(mcp.settings.host, '192.168.1.20')
+    assert.equal(mcp.settings.port, 12345)
+    assert.equal(component.error, null)
+    assert.deepEqual(calls, ['save', 'refresh'])
+})
+
+test('a rejected enable resets the toggle without saving again or clearing its error', async () => {
+    const { component, mcp, calls } = setup()
+    const resets: boolean[] = []
+    const control = { reset: value => { resets.push(value); component.setEnabled(value, control as any) } }
+    component.host = 'invalid'
+    await component.setEnabled(true, control as any)
+    assert.deepEqual(resets, [false])
+    assert.equal(mcp.settings.enabled, false)
+    assert.match(component.error!, /valid IPv4 or IPv6/)
+    assert.deepEqual(calls, [])
+    component.host = '127.0.0.1'
+    await component.setEnabled(true, control as any)
+    assert.equal(mcp.settings.enabled, true)
+    assert.equal(component.error, null)
+    assert.deepEqual(calls, ['save', 'refresh'])
+    assert.deepEqual(resets, [false])
+})
+
+test('an enable persistence failure restores the toggle and preserves the write error', async () => {
+    const { component, config, mcp, calls } = setup()
+    const resets: boolean[] = []
+    config.fail = true
+    await component.setEnabled(true, { reset: value => { resets.push(value) } } as any)
+    assert.equal(mcp.settings.enabled, false)
+    assert.deepEqual(resets, [false])
+    assert.equal(component.error, 'Write failed')
+    assert.deepEqual(calls, [])
 })
 
 test('cancelled vault unlock exposes a translatable message and clears busy state', async () => {
