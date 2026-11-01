@@ -315,6 +315,22 @@ test('a provider destruction failure still closes the owned SSH transport and re
     await fixture.adapter.disposeAll()
 })
 
+test('natural tab closure releases the owned SSH scope while preserving final output', async () => {
+    const fixture = sftpFixture()
+    const result: any = await fixture.adapter.callOperation('token', fixture.profile, 'open_connection', {}, async () => true)
+    const tab = fixture.opened[0]
+    await tab.setupOneSession(undefined, tab.profile)
+    tab.binaryOutput$.next(Buffer.from('final output'))
+    await tab.destroy()
+    await new Promise<void>(resolve => setImmediate(resolve))
+    assert.equal(fixture.disconnects(), 1, 'tab closure immediately disposes the owned transport scope')
+    const output: any = await fixture.adapter.callOperation('token', fixture.profile, 'read_connection', { sessionId: result.sessionId }, async () => true)
+    assert.equal(output.open, false)
+    assert.equal(output.output, 'final output', 'buffered output is still available without retaining transports')
+    await fixture.adapter.disposeAll()
+    assert.equal(fixture.disconnects(), 1, 'later runtime disposal does not close the scope twice')
+})
+
 test('SSH downloads combine chunks, reject growth beyond stat and always close handles', async () => {
     const fixture = sftpFixture([Buffer.from('first'), Buffer.from('second')], 11)
     const result: any = await fixture.adapter.callOperation('token', fixture.profile, 'download_file', { path: '/file' }, async () => true)

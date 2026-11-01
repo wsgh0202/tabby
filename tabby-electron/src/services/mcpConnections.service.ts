@@ -141,7 +141,13 @@ export class MCPConnectionsService {
         const protectSession = (value: BaseSession|null) => { if (value) { this.protectPendingSession(value, state) } }
         const subscriptions = [
             tab.binaryOutput$.subscribe(data => callbacks.output(data)),
-            tab.destroyed$.subscribe(() => { state.closed = true; callbacks.closed() }),
+            tab.destroyed$.subscribe(() => {
+                state.closed = true
+                callbacks.closed()
+                // Buffered output may outlive the tab, but its independent SSH
+                // transports (including jump hosts) must not wait for that lease.
+                this.disposeTransfer(sshScope).catch(() => undefined)
+            }),
             tab.sessionChanged$.subscribe(protectSession),
         ]
         protectSession(tab.session)
