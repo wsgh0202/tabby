@@ -25,18 +25,23 @@ function setup (isMainWindow = true) {
     }
     const secrets: any[] = []
     const vault = {
+        store: {},
+        loads: 0,
         isEnabled: () => true,
         isOpen: () => true,
-        load: async () => ({ config: {}, secrets }),
+        getCacheRevision: () => vault.store,
+        load: async () => { vault.loads++; return { config: {}, secrets } },
         addSecret: async secret => {
             const snapshot = [...secrets]
             await new Promise<void>(resolve => setImmediate(resolve))
             secrets.splice(0, secrets.length, ...snapshot, secret)
+            vault.store = {}
         },
         removeSecret: async (_type, key) => {
             const snapshot = secrets.filter(secret => secret.key.id !== key.id)
             await new Promise<void>(resolve => setImmediate(resolve))
             secrets.splice(0, secrets.length, ...snapshot)
+            vault.store = {}
         },
     }
     const profiles = {
@@ -68,7 +73,7 @@ function setup (isMainWindow = true) {
         await service.refresh()
         windowEvents.dispatchEvent(new Event('beforeunload'))
     }
-    return { service, config, secrets, ipcRenderer, disposedTokens, cleanup }
+    return { service, config, vault, secrets, ipcRenderer, disposedTokens, cleanup }
 }
 
 test('service persists an automatic port and reuses it across serialized restarts', async () => {
@@ -217,5 +222,48 @@ test('committed permission edits and revocation dispose token-owned connections'
         await assert.rejects(service.removeToken(id), /Save failed/)
         assert.deepEqual(disposedTokens, [id, id], 'revocation closes connections even when metadata persistence fails')
         assert.deepEqual(secrets, [], 'a failed metadata write does not restore the revoked credential')
+    } finally { await cleanup() }
+})
+
+test('service reuses credential hashes while live policy edits still change HTTP authorization', async () => {
+    const { service, config, vault, cleanup } = setup()
+    try {
+        const permissions = newMCPPermissions()
+        permissions.capabilities = ['connection_operations']
+        permissions.connections.one = { included: true, overrides: { access: true } }
+        const token = await service.createToken('Agent', permissions)
+        config.store.mcp.enabled = true
+        await service.refresh()
+        const call = () => fetch(service.address!, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream' },
+            body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }),
+        })
+        const responses = await Promise.all(Array.from({ length: 8 }, async () => (await (await call()).json()).result.tools))
+        assert.ok(responses.every(tools => tools.some(tool => tool.name === 'open_connection')))
+        assert.equal(vault.loads, 1, 'parallel SDK authorization checks share one vault decryption')
+        await service.updateToken(config.store.mcp.tokens[0].id, newMCPPermissions())
+        assert.equal((await (await call()).json()).result.tools.length, 0)
+        assert.equal(vault.loads, 1, 'saving policy metadata does not change the encrypted vault revision')
+    } finally { await cleanup() }
+})
+
+test('deleting a credential in the vault page invalidates the service hash cache', async () => {
+    const { service, config, vault, secrets, cleanup } = setup()
+    try {
+        const token = await service.createToken('Agent', newMCPPermissions())
+        config.store.mcp.enabled = true
+        await service.refresh()
+        const call = () => fetch(service.address!, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream' },
+            body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }),
+        })
+        assert.equal((await call()).status, 200)
+        assert.equal(vault.loads, 1)
+        secrets.splice(0)
+        vault.store = {}
+        assert.equal((await call()).status, 401)
+        assert.equal(vault.loads, 2)
     } finally { await cleanup() }
 })

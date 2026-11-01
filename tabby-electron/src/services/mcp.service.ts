@@ -32,7 +32,14 @@ export class MCPService {
         electron: ElectronService,
         private connections: MCPConnectionsService,
     ) {
-        this.tokens = new MCPTokens(vault, () => this.settings.tokens)
+        this.tokens = new MCPTokens({
+            isEnabled: () => vault.isEnabled(),
+            isOpen: () => vault.isOpen(),
+            getRevision: () => vault.getCacheRevision(),
+            load: () => vault.load(),
+            addSecret: secret => vault.addSecret(secret),
+            removeSecret: (type, key) => vault.removeSecret(type, key),
+        }, () => this.settings.tokens)
         this.server = new MCPHTTPServer({
             authenticate: async token => {
                 const entry = await this.tokens.authenticate(token)

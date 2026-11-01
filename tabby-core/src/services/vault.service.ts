@@ -102,6 +102,13 @@ export const VAULT_SECRET_TYPE_FILE = 'file'
 
 // Don't make it accessible through VaultService fields
 let _rememberedPassphrase: string|null = null
+let _passphraseRevision: object = {}
+
+function rememberVaultPassphrase (passphrase: string|null): void {
+    _rememberedPassphrase = passphrase
+    // Even re-entering the same password starts a new authentication attempt.
+    _passphraseRevision = {}
+}
 
 @Injectable({ providedIn: 'root' })
 export class VaultService {
@@ -113,6 +120,9 @@ export class VaultService {
     store: StoredVault|null = null
     private ready = new AsyncSubject<boolean>()
     private contentChanged = new Subject<void>()
+    private cacheStore: StoredVault|null = null
+    private cacheUnlock: object|null = null
+    private cacheRevision: object = {}
 
     /** @hidden */
     private constructor (
@@ -138,8 +148,19 @@ export class VaultService {
         return !!_rememberedPassphrase
     }
 
+    /** Opaque identity for one encrypted store and password attempt, including failed attempts. */
+    getCacheRevision (): object|null {
+        if (!this.store || !this.isOpen()) { return null }
+        if (this.cacheStore !== this.store || this.cacheUnlock !== _passphraseRevision) {
+            this.cacheStore = this.store
+            this.cacheUnlock = _passphraseRevision
+            this.cacheRevision = {}
+        }
+        return this.cacheRevision
+    }
+
     forgetPassphrase (): void {
-        _rememberedPassphrase = null
+        rememberVaultPassphrase(null)
     }
 
     async decrypt (storage: StoredVault, passphrase?: string): Promise<Vault> {
@@ -169,7 +190,7 @@ export class VaultService {
             passphrase = await this.getPassphrase()
         }
         if (_rememberedPassphrase) {
-            _rememberedPassphrase = passphrase
+            rememberVaultPassphrase(passphrase)
         }
         return wrapPromise(this.zone, encryptVault(vault, passphrase))
     }
@@ -189,10 +210,10 @@ export class VaultService {
             }
             const { passphrase, rememberFor } = result
             setTimeout(() => {
-                _rememberedPassphrase = null
+                rememberVaultPassphrase(null)
                 // avoid multiple consequent prompts
             }, Math.max(1000, rememberFor * 60000))
-            _rememberedPassphrase = passphrase
+            rememberVaultPassphrase(passphrase)
         }
 
         return _rememberedPassphrase!
