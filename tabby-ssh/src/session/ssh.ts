@@ -22,6 +22,7 @@ import * as russh from 'russh'
 import { selectNextAuthMethod, updateAuthPlanAfterFailure } from './authMethodSelection'
 import { AgentAuthMethod, getAgentAuthMethods } from './agentAuth'
 import { requestAgentIdentities } from './agentIdentities'
+import { SSHSessionCleanup } from './sessionCleanup'
 
 const WINDOWS_OPENSSH_AGENT_PIPE = '\\\\.\\pipe\\openssh-ssh-agent'
 
@@ -120,6 +121,14 @@ export class SSHSession {
     private knownHosts: SSHKnownHostsService
     private privateKeyImporters: AutoPrivateKeyLocator[]
     private previouslyDisconnected = false
+    private cleanup = new SSHSessionCleanup(() => {
+        this.logger.info('Destroying')
+        this.willDestroy.next()
+        this.willDestroy.complete()
+        this.serviceMessage.complete()
+    }, () => {
+        this.logger.debug('SSH transport disconnect failed; the connection may already be closed')
+    })
 
     constructor (
         private injector: Injector,
@@ -843,11 +852,7 @@ export class SSHSession {
     }
 
     async destroy (): Promise<void> {
-        this.logger.info('Destroying')
-        this.willDestroy.next()
-        this.willDestroy.complete()
-        this.serviceMessage.complete()
-        this.ssh.disconnect()
+        await this.cleanup.disconnect(this.ssh)
     }
 
     async openShellChannel (options: SSHShellChannelOptions): Promise<russh.Channel> {

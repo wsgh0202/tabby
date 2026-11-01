@@ -328,13 +328,26 @@ export class MCPConnectionsService {
         }
         await this.check(authorize)
         const handle = await sftp.open(target, data ? flags.OPEN_WRITE | flags.OPEN_CREATE | flags.OPEN_TRUNCATE : flags.OPEN_READ)
-        this.own(scope, () => handle.close())
-        if (data) {
-            await this.check(authorize)
-            await handle.write(data)
-            return undefined
+        let closing: Promise<void>|undefined = undefined
+        const close = (): Promise<void> => {
+            closing ??= Promise.resolve().then(() => handle.close())
+            return closing
         }
-        return readMCPFileChunks(() => handle.read(), authorize)
+        this.own(scope, close)
+        try {
+            if (data) {
+                await this.check(authorize)
+                await handle.write(data)
+                return undefined
+            }
+            return await readMCPFileChunks(() => handle.read(), authorize)
+        } finally {
+            // A successful write may still be buffered until SFTP close is
+            // acknowledged. Finish it before normal cleanup disconnects SSH.
+            // Cancellation keeps the scope's concurrent closers so disconnect
+            // can still interrupt a blocked native read, write or close.
+            await close()
+        }
     }
 
     private localPath (profile: Profile, target: string): string {

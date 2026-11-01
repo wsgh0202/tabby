@@ -4,7 +4,7 @@ import { Injector } from '@angular/core'
 import { LogService } from 'tabby-core'
 import { BaseSession, UTF8SplitterMiddleware, InputProcessor } from 'tabby-terminal'
 import { SSHSession } from './ssh'
-import { openShellChannelForProfile } from './shellChannel'
+import { openShellChannelForProfile, resizeShellPTY } from './shellChannel'
 import { SSHProfile } from '../api'
 import * as russh from 'russh'
 
@@ -89,11 +89,8 @@ export class SSHShellSession extends BaseSession {
     }
 
     resize (columns: number, rows: number): void {
-        this.shell?.resizePTY({
-            columns,
-            rows,
-            pixHeight: 0,
-            pixWidth: 0,
+        resizeShellPTY(this.open ? this.shell : undefined, { columns, rows }, () => {
+            this.logger.debug('SSH shell resize failed; the channel may already be closed')
         })
     }
 

@@ -40,3 +40,14 @@ export function requestShellPTY (channel: Pick<Channel, 'requestPTY'>, options: 
         pixWidth: 0,
     })
 }
+
+export function resizeShellPTY (
+    channel: Pick<Channel, 'resizePTY'>|undefined,
+    size: { columns: number, rows: number },
+    onError: () => void,
+): Promise<void> {
+    if (!channel) { return Promise.resolve() }
+    // Layout callbacks can outlive a shell or race its disconnection. Own the
+    // rejection here because BaseSession.resize has a synchronous void API.
+    return channel.resizePTY({ ...size, pixHeight: 0, pixWidth: 0 }).catch(onError)
+}
