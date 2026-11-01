@@ -51,8 +51,9 @@ export class MCPRuntime {
         this.idleTimeout = options.idleTimeout ?? MCP_SESSION_IDLE_TIMEOUT
         this.outputLimit = options.outputLimit ?? MCP_MAX_OUTPUT_BYTES
         if (options.sweepInterval !== 0) {
-            const timer = setInterval(() => this.sweep(), options.sweepInterval ?? 10000)
-            timer.unref()
+            const timer = setInterval(() => this.sweep(), options.sweepInterval ?? 10000) as ReturnType<typeof setInterval>|number
+            // Renderer globals return DOM IDs; only Node timer handles support unref.
+            if (typeof timer !== 'number') { timer.unref() }
         }
     }
 
