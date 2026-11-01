@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { DEFAULT_SSH_TERMINAL_TYPE, openShellChannelForProfile, requestShellPTY } from '../src/session/shellChannel.ts'
+import { DEFAULT_SSH_TERMINAL_TYPE, openShellChannelForProfile, requestShellPTY, resizeShellPTY } from '../src/session/shellChannel.ts'
 import type { SSHShellChannelOptions } from '../src/session/shellChannel.ts'
 
 class SharedSSHSessionAdapter {
@@ -44,5 +44,27 @@ describe('shared SSH session shell channels', () => {
         await openShellChannelForProfile(sharedSession, profile)
 
         assert.deepEqual(sharedSession.requestedTerms, [DEFAULT_SSH_TERMINAL_TYPE])
+    })
+})
+
+describe('SSH shell PTY resize lifecycle', () => {
+    it('preserves terminal dimensions for an active channel', async () => {
+        const sizes: unknown[] = []
+        await resizeShellPTY({ resizePTY: async size => { sizes.push(size) } }, { columns: 100, rows: 28 }, () => assert.fail('resize should succeed'))
+        assert.deepEqual(sizes, [{ columns: 100, rows: 28, pixHeight: 0, pixWidth: 0 }])
+    })
+
+    it('ignores a layout callback without an active shell channel', async () => {
+        await resizeShellPTY(undefined, { columns: 80, rows: 24 }, () => assert.fail('no native operation should run'))
+    })
+
+    it('handles an in-flight resize rejected after disconnection', async () => {
+        let rejectResize: (error: Error) => void = () => undefined
+        let failures = 0
+        const pending = new Promise<void>((_resolve, reject) => { rejectResize = reject })
+        const resizing = resizeShellPTY({ resizePTY: () => pending }, { columns: 80, rows: 24 }, () => { failures++ })
+        rejectResize(new Error('SendError'))
+        await resizing
+        assert.equal(failures, 1)
     })
 })
