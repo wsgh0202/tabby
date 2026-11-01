@@ -4,6 +4,7 @@ import { BOOTSTRAP_DATA, BootstrapData, ConfigService, ProfilesService, VaultSer
 import { MCPCatalog, MCPPermissions, validateMCPPermissions } from '../mcp/access'
 import { MCPHTTPServer } from '../mcp/server'
 import { MCPToken, MCPTokens } from '../mcp/tokens'
+import { isMCPTokenMetadata } from '../mcp/tokenDisplay'
 import { ElectronService } from './electron.service'
 import { MCPConnectionsService } from './mcpConnections.service'
 
@@ -123,12 +124,17 @@ export class MCPService {
 
     async createToken (name: string, permissions: MCPPermissions): Promise<string> {
         return this.mutateTokens(async () => {
+            // Reject an unsupported collection before adding a vault credential.
+            this.getTokenRecords()
             const { entry, token } = await this.tokens.create(name, permissions)
-            this.settings.tokens = [...this.settings.tokens, entry]
             try {
+                this.settings.tokens = [...this.getTokenRecords(), entry]
                 await this.config.save()
             } catch (error) {
-                this.settings.tokens = this.settings.tokens.filter(item => item.id !== entry.id)
+                const records = this.settings.tokens
+                if (Array.isArray(records)) {
+                    this.settings.tokens = records.filter(item => !isMCPTokenMetadata(item) || item.id !== entry.id)
+                }
                 await this.tokens.remove(entry.id)
                 throw error
             }
@@ -139,11 +145,11 @@ export class MCPService {
     async updateToken (id: string, permissions: MCPPermissions, name?: string): Promise<void> {
         return this.mutateTokens(async () => {
             validateMCPPermissions(permissions)
-            const previous = this.settings.tokens
-            if (!previous.some(token => token.id === id)) {
+            const previous = this.getTokenRecords()
+            if (!previous.some(token => isMCPTokenMetadata(token) && token.id === id)) {
                 throw new Error(_('MCP token no longer exists'))
             }
-            this.settings.tokens = previous.map(token => token.id === id ? {
+            this.settings.tokens = previous.map(token => isMCPTokenMetadata(token) && token.id === id ? {
                 ...token,
                 ...JSON.parse(JSON.stringify(permissions)),
                 name: name === undefined ? token.name : name.trim(),
@@ -160,12 +166,21 @@ export class MCPService {
 
     async removeToken (id: string): Promise<void> {
         return this.mutateTokens(async () => {
+            this.getTokenRecords()
             // Remove the credential first: a failed config write must never restore access.
             await this.tokens.remove(id)
             await this.connections.disposeToken(id)
-            this.settings.tokens = this.settings.tokens.filter(token => token.id !== id)
+            this.settings.tokens = this.getTokenRecords().filter(token => !isMCPTokenMetadata(token) || token.id !== id)
             await this.config.save()
         })
+    }
+
+    private getTokenRecords (): MCPToken[] {
+        const records = this.settings.tokens
+        if (!Array.isArray(records)) {
+            throw new Error(_('MCP token records are invalid. Review them in the configuration file.'))
+        }
+        return records
     }
 
     private mutateTokens<T> (mutation: () => Promise<T>): Promise<T> {

@@ -3,7 +3,7 @@ import { test } from 'node:test'
 import type { Vault, VaultSecret } from 'tabby-core'
 import { MCPTokens, MCPToken, MCPTokenVault, hashMCPToken, MCP_TOKEN_ID_PREFIX } from '../src/mcp/tokens'
 import { newMCPPermissions } from '../src/mcp/access'
-import { getMCPTokenLabel, previewMCPToken } from '../src/mcp/tokenDisplay'
+import { getMCPTokenLabel, isMCPTokenMetadata, previewMCPToken } from '../src/mcp/tokenDisplay'
 
 function setup (withRevision = false) {
     const secrets: VaultSecret[] = []
@@ -118,6 +118,29 @@ test('display labels support named entries and unnamed previews', () => {
     assert.equal(previewMCPToken('1234567890abcdef'), '12345678…cdef')
 })
 
+test('token metadata validation does not infer or require a supported policy', () => {
+    const valid = { id: 'id', name: '' }
+    assert.equal(isMCPTokenMetadata(valid), true)
+    assert.equal(isMCPTokenMetadata({ ...valid, preview: 'preview' }), true)
+    assert.equal(isMCPTokenMetadata({ ...valid, tools: ['list_connections'] }), true)
+    assert.equal(isMCPTokenMetadata(Object.assign(Object.create(null), valid)), true)
+    for (const invalid of [null, 1, 'token', [], {}, { name: '' }, { id: '', name: '' }, { id: 'id', name: 1 }, { ...valid, preview: 1 }, new Date()]) {
+        assert.equal(isMCPTokenMetadata(invalid), false)
+    }
+})
+
+test('authentication skips invalid metadata records and denies non-array collections', async () => {
+    const { tokens, vault } = setup(true)
+    const created = await tokens.create('Agent', newMCPPermissions())
+    let records: unknown = [null, {}, { ...created.entry, name: 1 }, { ...created.entry, preview: {} }, created.entry]
+    const reader = new MCPTokens(vault, () => records as MCPToken[])
+    assert.equal(await reader.authenticate(created.token), created.entry)
+    for (const invalid of [null, {}, 'tokens']) {
+        records = invalid
+        assert.equal(await reader.authenticate(created.token), null)
+    }
+})
+
 test('creation snapshots nested group templates and connection overrides', async () => {
     const { tokens } = setup()
     const permissions = newMCPPermissions()
@@ -158,6 +181,20 @@ test('cached credentials never cache policy edits or metadata revocation', async
     entries.splice(0)
     assert.equal(await tokens.authenticate(created.token), null)
     assert.equal(state.loads, 1, 'policy-only edits must not derive the vault key again')
+})
+
+test('a valid credential cannot authorize malformed or unsupported permission metadata', async () => {
+    const { tokens, entries, state } = setup(true)
+    const created = await tokens.create('Agent', newMCPPermissions())
+    entries.push(created.entry)
+    assert.equal(await tokens.authenticate(created.token), created.entry)
+    entries[0] = { id: created.entry.id, name: 'Agent', tools: ['list_connections'], groups: { mode: 'all', ids: [] }, connections: { mode: 'all', ids: [] } } as any
+    assert.equal(await tokens.authenticate(created.token), null)
+    entries[0] = { ...created.entry, capabilities: 'connection_operations' } as any
+    assert.equal(await tokens.authenticate(created.token), null)
+    entries[0] = created.entry
+    assert.equal(await tokens.authenticate(created.token), created.entry)
+    assert.equal(state.loads, 1, 'recovering permission metadata does not require caching authorization decisions')
 })
 
 test('unversioned adapters continue to load credentials for every authentication', async () => {

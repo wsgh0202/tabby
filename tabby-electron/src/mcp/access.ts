@@ -91,6 +91,22 @@ export function validateMCPPermissions (permissions: MCPPermissions): void {
     }
 }
 
+/** Read configuration at the boundary without granting meaning to unsupported data. */
+export function readMCPPermissions (value: unknown): MCPPermissions|null {
+    if (!isRecord(value)) { return null }
+    const permissions = {
+        capabilities: value.capabilities,
+        groups: value.groups,
+        connections: value.connections,
+    } as MCPPermissions
+    try {
+        validateMCPPermissions(permissions)
+        return permissions
+    } catch {
+        return null
+    }
+}
+
 /** A malformed ancestry never becomes a new root with broader permissions. */
 function groupAncestry (catalog: MCPCatalog, groupId: string): MCPGroup[]|null {
     const result: MCPGroup[] = []
