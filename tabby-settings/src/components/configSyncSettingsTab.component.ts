@@ -14,6 +14,7 @@ export class ConfigSyncSettingsTabComponent extends BaseComponent {
     connectionSuccessful: boolean|null = null
     connectionError: Error|null = null
     configs: Config[]|null = null
+    private requestVersion = 0
 
     @HostBinding('class.content-box') true
 
@@ -34,6 +35,7 @@ export class ConfigSyncSettingsTabComponent extends BaseComponent {
     }
 
     async testConnection () {
+        const isCurrentRequest = this.beginRequest()
         this.connectionSuccessful = null
         this.connectionError = null
         this.configs = null
@@ -42,9 +44,11 @@ export class ConfigSyncSettingsTabComponent extends BaseComponent {
         }
         try {
             await this.configSync.getUser()
+            if (!isCurrentRequest()) { return }
             this.connectionSuccessful = true
             await this.loadConfigs()
         } catch (e) {
+            if (!isCurrentRequest()) { return }
             this.connectionSuccessful = false
             this.connectionError = e
             this.configs = null
@@ -52,11 +56,15 @@ export class ConfigSyncSettingsTabComponent extends BaseComponent {
     }
 
     async loadConfigs () {
+        const isCurrentRequest = this.beginRequest()
         try {
-            this.configs = await this.configSync.getConfigs()
+            const configs = await this.configSync.getConfigs()
+            if (!isCurrentRequest()) { return }
+            this.configs = configs
             this.connectionSuccessful = true
             this.connectionError = null
         } catch (e) {
+            if (!isCurrentRequest()) { return }
             this.connectionSuccessful = false
             this.connectionError = e
             this.configs = null
@@ -153,6 +161,19 @@ export class ConfigSyncSettingsTabComponent extends BaseComponent {
 
     openTabbyWebInfo () {
         this.platform.openExternal('https://github.com/Eugeny/tabby-web')
+    }
+
+    private beginRequest (): () => boolean {
+        // Authentication checks and list refreshes share one order, so delayed
+        // responses cannot overwrite a newer result or changed credentials.
+        const version = ++this.requestVersion
+        const normalizeHost = (host: unknown) => typeof host === 'string' ? host.replace(/\/+$/, '') : host
+        const host = normalizeHost(this.config.store.configSync.host)
+        const token = this.config.store.configSync.token
+        // ConfigSyncService trims the host's trailing slash when making requests.
+        return () => version === this.requestVersion
+            && host === normalizeHost(this.config.store.configSync.host)
+            && token === this.config.store.configSync.token
     }
 
 }
