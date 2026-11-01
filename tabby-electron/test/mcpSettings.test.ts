@@ -8,7 +8,7 @@ import { newMCPPermissions } from '../src/mcp/access'
 function setup () {
     const calls: any[] = []
     const mcp = {
-        settings: { enabled: false, port: null as number|null, lastRandomPort: null as number|null },
+        settings: { enabled: false, port: null as number|null, lastRandomPort: null as number|null, tokens: [] as any[] },
         refresh: async () => { calls.push('refresh') },
         getCatalog: async () => ({ groups: [], connections: [] }),
         createToken: async (name, permissions) => { calls.push({ name, permissions }); return 'plaintext-once' },
@@ -96,6 +96,7 @@ test('editing clones permissions and supports removing independent selections', 
     await component.openEditor(token)
     const editor = state.editor
     editor.ngOnInit()
+    assert.equal(editor.invalidPermissions, false)
     editor.permissions.groups.group.access = false
     editor.permissions.connections.one.overrides.upload = true
     editor.name = 'Renamed'
@@ -106,6 +107,66 @@ test('editing clones permissions and supports removing independent selections', 
     assert.equal(calls[0].id, 'id')
     assert.deepEqual(calls[0].permissions.groups.group, { access: false })
     assert.equal(calls[0].name, 'Renamed')
+})
+
+test('token summaries reject unsupported policies without changing their persisted grants', () => {
+    const { component, mcp } = setup()
+    const legacy = { id: 'legacy', name: 'Old agent', tools: ['list_connections'], groups: { mode: 'all', ids: [] }, connections: { mode: 'all', ids: [] } }
+    const malformed = { id: 'malformed', name: 'Invalid agent', capabilities: ['connection_operations'], groups: {}, connections: { one: null } }
+    const valid = { ...newMCPPermissions(), id: 'valid', name: 'Current agent' }
+    valid.capabilities = ['connection_operations']
+    valid.connections = { one: { included: true, overrides: {} }, two: { included: false, overrides: { access: true } } }
+    mcp.settings.tokens = [legacy, malformed, valid]
+    const snapshot = JSON.stringify(mcp.settings.tokens)
+    assert.deepEqual(component.tokenRows.map(row => [row.invalidPermissions, row.capabilityCount, row.includedConnectionCount]), [
+        [true, 0, 0], [true, 0, 0], [false, 1, 1],
+    ])
+    assert.equal(JSON.stringify(mcp.settings.tokens), snapshot)
+    assert.equal(component.tokenRows[0], component.tokenRows[0], 'unchanged metadata reuses the safe presentation row')
+    mcp.settings.tokens[0] = { ...newMCPPermissions(), id: legacy.id, name: legacy.name }
+    assert.equal(component.tokenRows[0].invalidPermissions, false, 'saved replacement metadata is validated again')
+})
+
+test('invalid token metadata is isolated from render bindings without modifying configuration', () => {
+    const { component, mcp } = setup()
+    const legacy = { id: 'legacy', name: 'Old agent', tools: ['list_connections'], groups: { mode: 'all', ids: [] }, connections: { mode: 'all', ids: [] } }
+    const valid = { ...newMCPPermissions(), id: 'valid', name: '' }
+    const records = [null, 2, {}, { name: '' }, { id: 'bad-name', name: 2 }, { id: 'bad-preview', name: '', preview: {} }, valid, legacy]
+    mcp.settings.tokens = records
+    const snapshot = JSON.stringify(records)
+    assert.equal(component.invalidTokenRecords, true)
+    assert.deepEqual(component.tokenRows.map(row => component.trackTokenRow(0, row)), ['valid', 'legacy'])
+    assert.deepEqual(component.tokenRows.map(row => [component.tokenLabel(row.token), row.invalidPermissions]), [['valid…alid', false], ['Old agent', true]])
+    assert.equal(JSON.stringify(mcp.settings.tokens), snapshot)
+    assert.equal(mcp.settings.tokens, records)
+    for (const invalid of [null, {}, 'tokens']) {
+        mcp.settings.tokens = invalid as any
+        assert.deepEqual(component.tokenRows, [])
+        assert.equal(component.invalidTokenRecords, true)
+        assert.equal(mcp.settings.tokens, invalid)
+    }
+    mcp.settings.tokens = [valid]
+    assert.equal(component.invalidTokenRecords, false)
+})
+
+test('editing an unsupported policy starts denied and updates permissions only on explicit save', async () => {
+    const state = setup()
+    const legacy = { id: 'legacy', name: 'Old agent', tools: ['list_connections'], groups: { mode: 'all', ids: [] }, connections: { mode: 'all', ids: [] } }
+    const snapshot = JSON.stringify(legacy)
+    await state.component.openEditor(legacy as any)
+    state.editor.ngOnInit()
+    assert.equal(state.editor.invalidPermissions, true)
+    assert.equal(state.editor.connectionOperationsEnabled, false)
+    assert.deepEqual(state.editor.permissions, newMCPPermissions())
+    state.editor.cancel()
+    await new Promise(resolve => setImmediate(resolve))
+    assert.deepEqual(state.calls, [])
+    assert.equal(JSON.stringify(legacy), snapshot)
+    await state.component.openEditor(legacy as any)
+    state.editor.ngOnInit()
+    await state.editor.save()
+    assert.deepEqual(state.calls, [{ id: 'legacy', permissions: newMCPPermissions(), name: 'Old agent' }])
+    assert.equal(JSON.stringify(legacy), snapshot, 'the editor does not mutate the original policy object')
 })
 
 test('dirty dismissal requires confirmation and busy saves cannot be dismissed or duplicated', async () => {

@@ -15,6 +15,7 @@
         button.btn(type='button', (click)='navigate(toolsSection)', [class.btn-secondary]='activeSection === "tools"', [attr.aria-current]='activeSection === "tools" ? "location" : null', translate) Tool capabilities
 
     .token-form-page(#formPage, (scroll)='updateActiveSection()')
+        .alert.alert-warning.mt-3(*ngIf='invalidPermissions', translate) MCP permissions are invalid. Configure this token again before use.
         fieldset([disabled]='busy')
             section#general(#general, data-mcp-section)
                 h4(translate) General

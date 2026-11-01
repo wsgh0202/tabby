@@ -1,7 +1,7 @@
 import { marker as _ } from '@biesbjerg/ngx-translate-extract-marker'
 import { Component, ElementRef, Input, OnDestroy, OnInit, ViewChild } from '@angular/core'
 import { NgbActiveModal, NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap'
-import { MCPCatalog, MCPPermissions, newMCPPermissions } from '../mcp/access'
+import { MCPCatalog, MCPPermissions, newMCPPermissions, readMCPPermissions } from '../mcp/access'
 import { MCPToken } from '../mcp/tokens'
 import { getMCPTokenLabel } from '../mcp/tokenDisplay'
 import { MCPService } from '../services/mcp.service'
@@ -24,6 +24,7 @@ export class MCPTokenModalComponent implements OnInit, OnDestroy {
     error: string|null = null
     discardPrompt = false
     connectionsOpen = false
+    invalidPermissions = false
     private original = ''
     private discardConfirmed = false
     private connectionsModal: NgbModalRef|null = null
@@ -37,10 +38,11 @@ export class MCPTokenModalComponent implements OnInit, OnDestroy {
 
     ngOnInit (): void {
         this.name = this.token?.name ?? ''
-        if (this.token) {
-            const { capabilities, groups, connections } = this.token
-            this.permissions = JSON.parse(JSON.stringify({ capabilities, groups, connections }))
-        }
+        const permissions = readMCPPermissions(this.token)
+        this.invalidPermissions = !!this.token && !permissions
+        // Unsupported policies start denied in the draft; only Save replaces
+        // persisted permissions, so opening or cancelling never migrates grants.
+        this.permissions = permissions ? JSON.parse(JSON.stringify(permissions)) : newMCPPermissions()
         this.original = this.snapshot()
     }
 
