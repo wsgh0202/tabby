@@ -31,18 +31,19 @@ export class ConfigSyncSettingsTabComponent extends BaseComponent {
 
     async ngOnInit () {
         await this.testConnection()
-        this.loadConfigs()
     }
 
     async testConnection () {
+        this.connectionSuccessful = null
+        this.connectionError = null
+        this.configs = null
         if (!this.config.store.configSync.host || !this.config.store.configSync.token) {
             return
         }
-        this.connectionSuccessful = null
         try {
             await this.configSync.getUser()
             this.connectionSuccessful = true
-            this.loadConfigs()
+            await this.loadConfigs()
         } catch (e) {
             this.connectionSuccessful = false
             this.connectionError = e
@@ -51,7 +52,15 @@ export class ConfigSyncSettingsTabComponent extends BaseComponent {
     }
 
     async loadConfigs () {
-        this.configs = await this.configSync.getConfigs()
+        try {
+            this.configs = await this.configSync.getConfigs()
+            this.connectionSuccessful = true
+            this.connectionError = null
+        } catch (e) {
+            this.connectionSuccessful = false
+            this.connectionError = e
+            this.configs = null
+        }
     }
 
     async uploadAsNew () {
