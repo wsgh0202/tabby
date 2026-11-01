@@ -471,3 +471,21 @@ msgstr "Use this connection through Tabby to execute commands and interact with 
 
 msgid "View configuration"
 msgstr "View configuration"
+
+msgid "MCP permissions are invalid. Configure this token again before use."
+msgstr "MCP permissions are invalid. Configure this token again before use."
+
+msgid "MCP token records are invalid. Review them in the configuration file."
+msgstr "MCP token records are invalid. Review them in the configuration file."
+
+msgid "Capability description"
+msgstr "Capability description"
+
+msgid "Caution"
+msgstr "Caution"
+
+msgid "Agent side"
+msgstr "Agent side"
+
+msgid "Connection side"
+msgstr "Connection side"

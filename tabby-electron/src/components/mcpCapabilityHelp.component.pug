@@ -1,10 +1,21 @@
 button.btn.capability-help(type='button', [ngbPopover]='content', [popoverTitle]='title', triggers='manual', [autoClose]='false', [popperOptions]='popperOptions', placement='auto', container='body', popoverClass='mcp-capability-popover', (mouseenter)='open()', (mouseleave)='leave()', (focus)='focus()', (blur)='blur()', (click)='togglePinned()', (hidden)='pinned = false', [attr.aria-label]='capability.label | translate', [attr.aria-pressed]='pinned')
     i.far.fa-question-circle(aria-hidden='true')
 ng-template(#title)
-    span((mouseenter)='cancelClose()', (mouseleave)='leave()') {{capability.label | translate}}
+    span.capability-help-heading((mouseenter)='cancelClose()', (mouseleave)='leave()')
+        i.far.fa-question-circle(aria-hidden='true')
+        strong
+            span {{capability.label | translate}}
+            span.mx-1(aria-hidden='true') ·
+            span(translate) Capability description
 ng-template(#content)
     .capability-help-content((mouseenter)='cancelClose()', (mouseleave)='leave()')
         p.mb-0 {{capability.description | translate}}
-        p.capability-warning.mt-3.mb-0(*ngIf='capability.warning')
-            i.fas.fa-exclamation-triangle.me-2(aria-hidden='true')
-            span {{capability.warning | translate}}
+        .capability-direction(*ngIf='capability.direction')
+            span {{capability.direction.from | translate}}
+            i.fas.fa-arrow-right(aria-hidden='true')
+            span {{capability.direction.to | translate}}
+        .capability-warning(*ngIf='capability.warning')
+            strong
+                i.fas.fa-exclamation-triangle(aria-hidden='true')
+                span(translate) Caution
+            p.mb-0 {{capability.warning | translate}}

@@ -40,20 +40,22 @@ section
             p.text-muted.mb-0(translate) Each token has its own tool capabilities and access permissions.
         button.btn.btn-primary(type='button', (click)='openEditor()', [disabled]='busy || editorOpen || !vault.isEnabled() || !!createdToken', translate) Create token
     p.text-muted(translate) Use Authorization: Bearer TOKEN when connecting an agent. Each token has its own tools and connection access.
+    .alert.alert-warning(*ngIf='invalidTokenRecords', translate) MCP token records are invalid. Review them in the configuration file.
     .alert.alert-warning(*ngIf='createdToken', role='status')
         p(translate) Copy this token now. It will only be shown once.
         code.d-block.text-break.selectable {{createdToken}}
         button.btn.btn-secondary.mt-2(type='button', (click)='copy(createdToken!)', translate) Copy token
         button.btn.btn-primary.mt-2.ms-2(type='button', (click)='createdToken = null', translate) Done
     .mcp-section.token-list
-        p.text-muted.p-3.mb-0(*ngIf='!mcp.settings.tokens.length', translate) No tokens yet.
-        .token-row(*ngFor='let token of mcp.settings.tokens')
+        p.text-muted.p-3.mb-0(*ngIf='!tokenRows.length', translate) No tokens yet.
+        .token-row(*ngFor='let row of tokenRows; trackBy: trackTokenRow')
             .token-details
-                .token-name {{tokenLabel(token)}}
-                code.text-muted(*ngIf='token.name && token.preview') {{token.preview}}
+                .token-name {{tokenLabel(row.token)}}
+                code.text-muted(*ngIf='row.token.name && row.token.preview') {{row.token.preview}}
                 .token-summary.text-muted
-                    span(translate='Capabilities: {count} / {total}', [translateParams]='{count: token.capabilities.length, total: toolCount}')
-                    span(translate='Included connections: {count}', [translateParams]='{count: includedConnectionCount(token)}')
+                    span(translate='Capabilities: {count} / {total}', [translateParams]='{count: row.capabilityCount, total: toolCount}')
+                    span(translate='Included connections: {count}', [translateParams]='{count: row.includedConnectionCount}')
+                p.text-warning.mt-2.mb-0(*ngIf='row.invalidPermissions', translate) MCP permissions are invalid. Configure this token again before use.
             .token-actions
-                button.btn.btn-secondary(type='button', (click)='openEditor(token)', [disabled]='busy || editorOpen || !!createdToken', translate) View details
-                button.btn.btn-danger(type='button', (click)='removeToken(token)', [disabled]='busy || editorOpen', translate) Revoke
+                button.btn.btn-secondary(type='button', (click)='openEditor(row.token)', [disabled]='busy || editorOpen || !!createdToken', translate) View details
+                button.btn.btn-danger(type='button', (click)='removeToken(row.token)', [disabled]='busy || editorOpen', translate) Revoke

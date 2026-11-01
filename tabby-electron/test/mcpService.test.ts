@@ -165,6 +165,64 @@ test('a failed token transaction does not block later mutations', async () => {
     } finally { await cleanup() }
 })
 
+test('mixed invalid token records survive valid edits, revocation and failed creation', async () => {
+    const { service, config, secrets, cleanup } = setup()
+    try {
+        await service.createToken('Current agent', newMCPPermissions())
+        const target = config.store.mcp.tokens[0]
+        const invalid = [null, {}, { id: target.id, name: 2 }]
+        const legacy = { id: 'legacy', name: 'Old agent', tools: ['list_connections'], groups: { mode: 'all', ids: [] }, connections: { mode: 'all', ids: [] } }
+        config.store.mcp.tokens = [...invalid, legacy, target]
+        await service.updateToken(target.id, newMCPPermissions(), 'Renamed')
+        assert.deepEqual(config.store.mcp.tokens.slice(0, invalid.length), invalid)
+        assert.equal(config.store.mcp.tokens[4].name, 'Renamed')
+        await service.updateToken(legacy.id, newMCPPermissions(), 'Reconfigured')
+        assert.deepEqual(config.store.mcp.tokens[3].capabilities, [])
+        assert.deepEqual(config.store.mcp.tokens[3].connections, {})
+        const snapshot = JSON.stringify(config.store.mcp.tokens)
+        config.fail = true
+        await assert.rejects(service.createToken('Failed', newMCPPermissions()), /Save failed/)
+        assert.equal(JSON.stringify(config.store.mcp.tokens), snapshot)
+        assert.equal(secrets.length, 1)
+        config.fail = false
+        await service.removeToken(target.id)
+        assert.deepEqual(config.store.mcp.tokens.slice(0, invalid.length), invalid)
+        assert.equal(config.store.mcp.tokens.length, 4)
+        assert.deepEqual(secrets, [])
+    } finally { await cleanup() }
+})
+
+test('non-array token collections reject mutations before creating or removing vault credentials', async () => {
+    const { service, config, vault, secrets, cleanup } = setup()
+    let removals = 0
+    const remove = vault.removeSecret
+    vault.removeSecret = async (...args) => { removals++; await remove(...args) }
+    try {
+        for (const invalid of [null, {}, 'tokens']) {
+            config.store.mcp.tokens = invalid as any
+            await assert.rejects(service.createToken('Agent', newMCPPermissions()), /MCP token records are invalid/)
+            await assert.rejects(service.updateToken('id', newMCPPermissions()), /MCP token records are invalid/)
+            await assert.rejects(service.removeToken('id'), /MCP token records are invalid/)
+            assert.equal(config.store.mcp.tokens, invalid)
+        }
+        assert.equal(config.saves, 0)
+        assert.equal(removals, 0)
+        assert.deepEqual(secrets, [])
+    } finally { await cleanup() }
+})
+
+test('creation removes its new credential if token records become invalid while the vault is saving', async () => {
+    const { service, config, vault, secrets, cleanup } = setup()
+    const add = vault.addSecret
+    vault.addSecret = async secret => { await add(secret); config.store.mcp.tokens = null as any }
+    try {
+        await assert.rejects(service.createToken('Agent', newMCPPermissions()), /MCP token records are invalid/)
+        assert.equal(config.store.mcp.tokens, null)
+        assert.deepEqual(secrets, [])
+        assert.equal(config.saves, 0)
+    } finally { await cleanup() }
+})
+
 test('created, edited and revoked tokens affect authenticated HTTP requests', async () => {
     const { service, config, secrets, cleanup } = setup()
     try {

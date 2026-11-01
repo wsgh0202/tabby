@@ -1,8 +1,8 @@
 import { marker as _ } from '@biesbjerg/ngx-translate-extract-marker'
 import { createHash, randomBytes, timingSafeEqual } from 'crypto'
 import type { Vault, VaultSecret } from 'tabby-core'
-import { MCPPermissions, validateMCPPermissions } from './access'
-import { getMCPTokenLabel, previewMCPToken } from './tokenDisplay'
+import { MCPPermissions, readMCPPermissions, validateMCPPermissions } from './access'
+import { getMCPTokenLabel, isMCPTokenMetadata, previewMCPToken } from './tokenDisplay'
 
 export const MCP_TOKEN_TYPE = 'custom:password'
 export const MCP_TOKEN_ID_PREFIX = 'mcp:token:'
@@ -91,7 +91,10 @@ export class MCPTokens {
             return null
         }
         // Read permissions after awaiting the vault, so edits/revocations take effect immediately.
-        return this.getTokens().find(entry => entry.id === id) ?? null
+        const records = this.getTokens()
+        if (!Array.isArray(records)) { return null }
+        const entry = records.find(item => isMCPTokenMetadata(item) && item.id === id)
+        return entry && readMCPPermissions(entry) ? entry : null
     }
 
     private getRevision (): object|null {

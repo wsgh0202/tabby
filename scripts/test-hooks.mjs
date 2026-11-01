@@ -11,6 +11,8 @@ import ts from 'typescript'
 const TABBY_CORE_STUB = `
 export const BOOTSTRAP_DATA = 'BOOTSTRAP_DATA'
 export class AppService {}
+export class BaseComponent {}
+export class PromptModalComponent {}
 export class BaseTabComponent { destroy () {} }
 export class SubscriptionContainer {
     constructor () { this.subscriptions = [] }

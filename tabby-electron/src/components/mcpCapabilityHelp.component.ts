@@ -1,7 +1,7 @@
 import { DOCUMENT } from '@angular/common'
 import { Component, ElementRef, Inject, Input, OnDestroy, OnInit, ViewChild } from '@angular/core'
 import { NgbPopover } from '@ng-bootstrap/ng-bootstrap'
-import { Options } from '@popperjs/core'
+import { Options, preventOverflow } from '@popperjs/core'
 import { MCPCapabilityLabel } from '../mcp/capabilityLabels'
 
 /** @hidden */
@@ -42,7 +42,9 @@ export class MCPCapabilityHelpComponent implements OnInit, OnDestroy {
             ...options,
             modifiers: [
                 ...options.modifiers ?? [],
-                { name: 'preventOverflow', options: { boundary, padding: 8, altAxis: true } },
+                // Ng-bootstrap replaces this modifier with a no-op; restore its
+                // implementation so a clipped trigger cannot pull help outside.
+                { ...preventOverflow, options: { boundary, padding: 8, altAxis: true, tether: false } },
                 { name: 'flip', options: { boundary, padding: 8 } },
                 {
                     name: 'mcpSize',
@@ -50,9 +52,10 @@ export class MCPCapabilityHelpComponent implements OnInit, OnDestroy {
                     phase: 'beforeWrite',
                     fn: ({ state }) => {
                         const bounds = dialog?.getBoundingClientRect()
-                        state.styles.popper.maxWidth = `min(23rem, ${Math.max(1, (bounds?.width ?? this.document.documentElement.clientWidth) - 16)}px)`
+                        state.styles.popper.maxWidth = `min(23.75rem, ${Math.max(1, (bounds?.width ?? this.document.documentElement.clientWidth) - 16)}px)`
                         state.styles.popper.maxHeight = `${Math.max(1, (bounds?.height ?? this.document.documentElement.clientHeight) - 16)}px`
-                        state.styles.popper.overflowY = 'auto'
+                        // The external arrow must not become scrollable overflow.
+                        // Flex layout constrains only the popover body when needed.
                     },
                 },
             ],

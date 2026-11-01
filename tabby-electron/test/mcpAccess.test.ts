@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import {
     accessibleCatalog, callMCPTool, canAccessConnection, getMCPIncludedConnections, MCPCatalog,
-    newMCPPermissions, resolveMCPConnectionCapability, resolveMCPGroupCapability, validateMCPPermissions,
+    newMCPPermissions, readMCPPermissions, resolveMCPConnectionCapability, resolveMCPGroupCapability, validateMCPPermissions,
 } from '../src/mcp/access'
 
 const catalog: MCPCatalog = {
@@ -36,6 +36,21 @@ test('new tokens deny every operation and connection', () => {
     assert.equal(resolveMCPConnectionCapability(permissions, catalog, 'a1', 'view_config'), false)
     assert.throws(() => callMCPTool(permissions, catalog, 'list_connections', {}), /denied/)
     validateMCPPermissions(permissions)
+})
+
+test('configuration reads accept valid token metadata and reject unsupported permission data without changing it', () => {
+    const permissions = permissionsWithSelection()
+    const entry = { ...permissions, id: 'token', name: 'Agent', preview: 'abcd…1234' }
+    assert.deepEqual(readMCPPermissions(entry), permissions)
+    const unsupported = { id: 'token', name: 'Agent', tools: ['list_connections'], groups: { mode: 'all', ids: [] }, connections: { mode: 'all', ids: [] } }
+    const original = JSON.stringify(unsupported)
+    for (const value of [undefined, null, [], unsupported,
+        { ...entry, capabilities: 'connection_operations' },
+        { ...entry, connections: { a1: { included: true, overrides: { access: null } } } },
+    ]) {
+        assert.equal(readMCPPermissions(value), null)
+    }
+    assert.equal(JSON.stringify(unsupported), original, 'reading must not convert or overwrite existing configuration')
 })
 
 test('selection determines discovery independently from configuration and terminal permissions', () => {

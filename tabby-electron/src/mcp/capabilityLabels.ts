@@ -9,6 +9,7 @@ export interface MCPCapabilityLabel {
     label: string
     description: string
     warning?: string
+    direction?: { from: string, to: string }
 }
 
 const transferWarning = _('Upload and download are convenience tools, not a file-transfer security boundary. With connection access, an agent may still transfer files through commands or encoded text.')
@@ -17,6 +18,6 @@ export const MCP_CAPABILITY_LABELS: MCPCapabilityLabel[] = [
     { id: 'view_config', label: _('View configuration'), description: _('Read the configuration of an included connection without opening a terminal or executing commands.') },
     { id: 'edit_config', label: _('Modify configuration'), description: _('Modify the configuration of an included connection without granting terminal or file-transfer access.') },
     { id: 'access', label: _('Access connection'), description: _('Use this connection through Tabby to execute commands and interact with its terminal.'), warning: _('Commands may read, write, or transfer files. Upload and download tool switches cannot prevent these operations.') },
-    { id: 'upload', label: _('Upload'), description: _('Transfer files from the agent to this connection through MCP and Tabby.'), warning: transferWarning },
-    { id: 'download', label: _('Download'), description: _('Transfer files from this connection to the agent through Tabby and MCP.'), warning: transferWarning },
+    { id: 'upload', label: _('Upload'), description: _('Transfer files from the agent to this connection through MCP and Tabby.'), warning: transferWarning, direction: { from: _('Agent side'), to: _('Connection side') } },
+    { id: 'download', label: _('Download'), description: _('Transfer files from this connection to the agent through Tabby and MCP.'), warning: transferWarning, direction: { from: _('Connection side'), to: _('Agent side') } },
 ]

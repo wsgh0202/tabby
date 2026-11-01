@@ -21,6 +21,22 @@ function sessionFixture (options = {}) {
     return { runtime, open, inputs, output: (value: Buffer|string) => callbacks.output(Buffer.from(value)), setAllowed: (value: boolean) => { allowed = value }, closes: () => closes }
 }
 
+test('runtime handles DOM interval IDs and sweeps expired sessions', async context => {
+    let scheduled: (() => Promise<void>)|undefined
+    context.mock.method(globalThis, 'setInterval', callback => { scheduled = callback; return 42 as any })
+    let now = 0
+    let closes = 0
+    const runtime = new MCPRuntime({ now: () => now, idleTimeout: 100 })
+    const { sessionId } = await runtime.open('token', 'connection', async () => ({
+        open: true, write: () => undefined, close: async () => { closes++ },
+    }), async () => true)
+    assert.equal(typeof scheduled, 'function')
+    now = 100
+    await scheduled!()
+    assert.equal(closes, 1)
+    await assert.rejects(runtime.read('token', 'connection', sessionId), /not found/)
+})
+
 test('terminal sessions isolate bearer ownership and connection identities', async () => {
     const fixture = sessionFixture()
     const { sessionId } = await fixture.open()

@@ -2,11 +2,19 @@ import { marker as _ } from '@biesbjerg/ngx-translate-extract-marker'
 import { Component, HostBinding, OnDestroy } from '@angular/core'
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap'
 import { ConfigService, PlatformService, VaultService } from 'tabby-core'
+import { readMCPPermissions } from '../mcp/access'
 import { MCP_GLOBAL_CAPABILITIES } from '../mcp/capabilityLabels'
 import { MCPToken } from '../mcp/tokens'
 import { MCPService } from '../services/mcp.service'
-import { getMCPTokenLabel } from '../mcp/tokenDisplay'
+import { getMCPTokenLabel, isMCPTokenMetadata } from '../mcp/tokenDisplay'
 import { MCPTokenModalComponent } from './mcpTokenModal.component'
+
+interface MCPTokenRow {
+    token: MCPToken
+    capabilityCount: number
+    includedConnectionCount: number
+    invalidPermissions: boolean
+}
 
 /** @hidden */
 @Component({
@@ -25,6 +33,7 @@ export class MCPSettingsTabComponent implements OnDestroy {
     busy = false
     private editorModal: NgbModalRef|null = null
     private destroyed = false
+    private tokenRowsCache = new WeakMap<MCPToken, MCPTokenRow>()
 
     constructor (
         public mcp: MCPService,
@@ -47,8 +56,33 @@ export class MCPSettingsTabComponent implements OnDestroy {
         return port ? `http://127.0.0.1:${port}/mcp` : 'http://127.0.0.1:<automatic>/mcp'
     }
 
-    includedConnectionCount (token: MCPToken): number {
-        return Object.values(token.connections).filter(connection => connection.included).length
+    get tokenRows (): MCPTokenRow[] {
+        const records = this.mcp.settings.tokens
+        if (!Array.isArray(records)) { return [] }
+        return records.filter(isMCPTokenMetadata).map(token => {
+            const cached = this.tokenRowsCache.get(token)
+            if (cached) { return cached }
+            const permissions = readMCPPermissions(token)
+            const row = {
+                token,
+                capabilityCount: permissions?.capabilities.length ?? 0,
+                includedConnectionCount: permissions ? Object.values(permissions.connections).filter(connection => connection.included).length : 0,
+                invalidPermissions: permissions === null,
+            }
+            // Token edits replace their metadata object. Cache only presentation
+            // counts, keeping unsupported persisted policies away from bindings.
+            this.tokenRowsCache.set(token, row)
+            return row
+        })
+    }
+
+    get invalidTokenRecords (): boolean {
+        const records = this.mcp.settings.tokens
+        return !Array.isArray(records) || records.some(token => !isMCPTokenMetadata(token))
+    }
+
+    trackTokenRow (_index: number, row: MCPTokenRow): string {
+        return row.token.id
     }
 
     async saveSettings (enabled = this.mcp.settings.enabled): Promise<void> {
