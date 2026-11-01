@@ -296,11 +296,11 @@ function sftpFixture (chunks: Buffer[] = [], size = 0) {
     let flags = 0
     const written: Buffer[] = []
     const openedProfiles: any[] = []
-    const hooks = { start: async () => undefined, read: async () => undefined, open: async () => undefined }
+    const hooks = { start: async () => undefined, read: async () => undefined, open: async () => undefined, close: async () => undefined, destroy: async () => undefined }
     const handle = {
         read: async () => { reads++; await hooks.read(); return chunks.shift() ?? Buffer.alloc(0) },
         write: async (data: Uint8Array) => { written.push(Buffer.from(data)) },
-        close: async () => { closes++ },
+        close: async () => { closes++; await hooks.close() },
     }
     const sftp = {
         stat: async () => ({ isDirectory: false, size }),
@@ -312,7 +312,7 @@ function sftpFixture (chunks: Buffer[] = [], size = 0) {
             return {
                 keyboardInteractivePrompt$: new Subject(),
                 start: async () => hooks.start(),
-                destroy: async () => { disconnects++ },
+                destroy: async () => { disconnects++; await hooks.destroy() },
                 openSFTP: async () => sftp,
             }
         }
@@ -332,6 +332,57 @@ test('SSH uploads include empty files, disable forwarding and close native resou
     assert.deepEqual(fixture.openedProfiles[0].options.forwardedPorts, [])
     assert.equal(fixture.openedProfiles[0].options.agentForward, false)
     assert.equal(fixture.opened.length, 0)
+    await fixture.adapter.disposeAll()
+})
+
+for (const upload of [true, false]) {
+    test(`SSH ${upload ? 'uploads' : 'downloads'} wait for file close acknowledgement before disconnecting`, { timeout: 2000 }, async () => {
+        const fixture = sftpFixture([Buffer.from('data')], 4)
+        let release: () => void = () => undefined
+        let entered: () => void = () => undefined
+        const gate = new Promise<void>(resolve => { release = resolve })
+        const closing = new Promise<void>(resolve => { entered = resolve })
+        fixture.hooks.close = async () => { entered(); await gate }
+        const operation = fixture.adapter.callOperation('token', fixture.profile, upload ? 'upload_file' : 'download_file', upload ? { path: '/file', data: 'ZGF0YQ==' } : { path: '/file' }, async () => true)
+        await closing
+        const disconnectedBeforeClose = fixture.disconnects()
+        release()
+        await operation
+        assert.equal(disconnectedBeforeClose, 0, 'the SFTP close acknowledgement must precede SSH shutdown')
+        assert.equal(fixture.closes(), 1)
+        assert.equal(fixture.disconnects(), 1)
+        await fixture.adapter.disposeAll()
+    })
+}
+
+test('failed SFTP file close rejects the transfer instead of reporting success', async () => {
+    const fixture = sftpFixture()
+    fixture.hooks.close = async () => { throw new Error('SFTP close failed') }
+    await assert.rejects(fixture.adapter.callOperation('token', fixture.profile, 'upload_file', { path: '/file', data: 'ZGF0YQ==' }, async () => true), /SFTP close failed/)
+    assert.equal(fixture.closes(), 1)
+    assert.equal(fixture.disconnects(), 1)
+    await fixture.adapter.disposeAll()
+})
+
+test('revocation disconnects SSH while a file close is pending and does not close the handle twice', { timeout: 2000 }, async () => {
+    const fixture = sftpFixture()
+    let release: () => void = () => undefined
+    let entered: () => void = () => undefined
+    let authorized = true
+    const gate = new Promise<void>(resolve => { release = resolve })
+    const closing = new Promise<void>(resolve => { entered = resolve })
+    fixture.hooks.close = async () => { entered(); await gate }
+    // A broken transport can leave close awaiting a server acknowledgement.
+    // Cancellation must still reach disconnect to unblock that native request.
+    fixture.hooks.destroy = async () => { release() }
+    const operation = fixture.adapter.callOperation('token', fixture.profile, 'upload_file', { path: '/file', data: 'ZGF0YQ==' }, async () => authorized)
+    const rejected = assert.rejects(operation, /denied/)
+    await closing
+    authorized = false
+    await fixture.adapter.disposeToken('token')
+    await rejected
+    assert.equal(fixture.closes(), 1)
+    assert.equal(fixture.disconnects(), 1)
     await fixture.adapter.disposeAll()
 })
 
