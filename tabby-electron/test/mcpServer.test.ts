@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import { createServer, request } from 'node:http'
 import { test } from 'node:test'
+import { networkInterfaces } from 'node:os'
+import { formatMCPAddress } from '../src/mcp/listenAddress'
 import { MCPHTTPServer } from '../src/mcp/server'
 import { newMCPPermissions } from '../src/mcp/access'
 import { MCPToolError } from '../src/mcp/tools'
@@ -38,7 +40,8 @@ async function rpc (server: MCPHTTPServer, method: string, params: object = {}, 
         headers: { Authorization: `Bearer ${bearer}`, 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream', ...headers },
         body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
     })
-    return { status: response.status, body: await response.json() }
+    const body = response.headers.get('content-type')?.includes('application/json') ? await response.json() : await response.text()
+    return { status: response.status, body }
 }
 
 test('official SDK clients can initialize, list and call tools over Streamable HTTP', async () => {
@@ -238,4 +241,87 @@ test('random ports reuse the previous port and fall back only when it is occupie
         await server.stop()
         await new Promise<void>(resolve => blocker.close(() => resolve()))
     }
+})
+
+test('wildcard IPv4 listening accepts the destination IP while retaining authentication and host/origin checks', async () => {
+    const { server } = setup()
+    try {
+        await server.start(null, null, '0.0.0.0')
+        assert.equal(server.address, `http://127.0.0.1:${server.port}/mcp`)
+        assert.equal((await rpc(server, 'tools/list')).status, 200)
+        assert.equal((await fetch(server.address!)).status, 401)
+        assert.equal((await rpc(server, 'tools/list', {}, { Origin: `http://127.0.0.1:${server.port}` })).status, 200)
+        assert.equal((await rpc(server, 'tools/list', {}, { Origin: 'http://untrusted.invalid' })).status, 403)
+        const status = await new Promise<number>((resolve, reject) => {
+            const req = request(server.address!, { headers: { Host: `untrusted.invalid:${server.port}`, Authorization: `Bearer ${bearer}` } }, response => {
+                response.resume(); resolve(response.statusCode!)
+            })
+            req.on('error', reject)
+            req.end()
+        })
+        assert.equal(status, 403)
+    } finally { await server.stop() }
+})
+
+test('literal IPv6 and dual-stack wildcard listeners serve authenticated MCP requests', async context => {
+    for (const host of ['::1', '::']) {
+        const { server } = setup()
+        try {
+            try {
+                await server.start(null, null, host)
+            } catch (error) {
+                if (['EAFNOSUPPORT', 'EADDRNOTAVAIL'].includes(error.code)) {
+                    context.skip('IPv6 networking is not available')
+                    return
+                }
+                throw error
+            }
+            assert.equal(server.address, `http://[::1]:${server.port}/mcp`)
+            assert.equal((await rpc(server, 'tools/list')).status, 200)
+            assert.equal((await rpc(server, 'tools/list', {}, { Origin: `http://[::1]:${server.port}` })).status, 200)
+            assert.equal((await rpc(server, 'tools/list', {}, { Origin: 'http://untrusted.invalid' })).status, 403)
+            if (host === '::') {
+                const response = await fetch(`http://127.0.0.1:${server.port}/mcp`, { headers: { Authorization: `Bearer ${bearer}` } })
+                assert.equal(response.status, 405, 'IPv4-mapped sockets keep accepting their IPv4 Host header')
+            }
+        } finally { await server.stop() }
+    }
+})
+
+test('a real LAN interface accepts official SDK clients and rejects foreign Host/Origin headers', async context => {
+    const host = Object.values(networkInterfaces()).flat().find(address => address?.family === 'IPv4' && !address.internal)?.address
+    if (!host) { context.skip('No IPv4 LAN interface is available'); return }
+    const { server } = setup()
+    const client = new Client({ name: 'lan-test', version: '1' })
+    try {
+        await server.start(null, null, host)
+        assert.equal(server.address, formatMCPAddress(host, server.port!))
+        await client.connect(new StreamableHTTPClientTransport(new URL(server.address!), { requestInit: { headers: { Authorization: `Bearer ${bearer}` } } }))
+        assert.equal((await client.listTools()).tools.length, 3)
+        assert.equal((await fetch(server.address!)).status, 401)
+        assert.equal((await rpc(server, 'tools/list', {}, { Origin: `http://${host}:${server.port}` })).status, 200)
+        assert.equal((await rpc(server, 'tools/list', {}, { Origin: `http://127.0.0.1:${server.port}` })).status, 403, 'a LAN request cannot claim a different local origin')
+        const badHost = await new Promise<number>((resolve, reject) => {
+            const req = request(server.address!, { headers: { Host: `untrusted.invalid:${server.port}`, Authorization: `Bearer ${bearer}` } }, response => {
+                response.resume(); resolve(response.statusCode!)
+            })
+            req.on('error', reject)
+            req.end()
+        })
+        assert.equal(badHost, 403)
+        await client.close()
+        await server.start(null, null, '0.0.0.0')
+        const response = await fetch(formatMCPAddress(host, server.port!), { headers: { Authorization: `Bearer ${bearer}` } })
+        assert.equal(response.status, 405, 'wildcard listens on the LAN address as well as loopback')
+    } finally { await client.close(); await server.stop() }
+})
+
+test('invalid listener IP values never fall back to a wildcard address', async () => {
+    const { server } = setup()
+    try {
+        for (const host of ['', 'localhost', 'bad.invalid', '192.168.1.999', '[::1]', 'fe80::1%eth0']) {
+            await assert.rejects(server.start(null, null, host), /valid IPv4 or IPv6/)
+            assert.equal(server.address, null)
+        }
+    } finally { await server.stop() }
 })

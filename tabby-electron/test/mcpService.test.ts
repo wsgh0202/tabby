@@ -12,7 +12,7 @@ function setup (isMainWindow = true) {
     const ready = new AsyncSubject<boolean>()
     const changed = new Subject<void>()
     const config = {
-        store: { mcp: { enabled: false, port: null, lastRandomPort: null, tokens: [] as any[] } },
+        store: { mcp: { enabled: false, host: '127.0.0.1' as string|undefined, port: null, lastRandomPort: null, tokens: [] as any[] } },
         ready$: ready,
         changed$: changed,
         saves: 0,
@@ -60,10 +60,11 @@ function setup (isMainWindow = true) {
     }
     const ipcRenderer = new EventEmitter()
     const disposedTokens: string[] = []
+    let disposedAll = 0
     const connections = {
         callOperation: async () => { throw new Error('Unexpected connection operation') },
         disposeToken: id => { disposedTokens.push(id) },
-        disposeAll: () => undefined,
+        disposeAll: () => { disposedAll++ },
     }
     const service = new MCPService(config as any, profiles as any, vault as any, { isMainWindow } as any, { ipcRenderer } as any, connections as any)
     ready.next(true)
@@ -73,7 +74,7 @@ function setup (isMainWindow = true) {
         await service.refresh()
         windowEvents.dispatchEvent(new Event('beforeunload'))
     }
-    return { service, config, vault, secrets, ipcRenderer, disposedTokens, cleanup }
+    return { service, config, vault, secrets, ipcRenderer, disposedTokens, disposedAll: () => disposedAll, cleanup }
 }
 
 test('service persists an automatic port and reuses it across serialized restarts', async () => {
@@ -92,6 +93,72 @@ test('service persists an automatic port and reuses it across serialized restart
         await Promise.all([service.refresh(), service.refresh(), service.refresh()])
         assert.equal(service.address, `http://127.0.0.1:${port}/mcp`)
         assert.equal(config.saves, 1)
+    } finally { await cleanup() }
+})
+
+test('missing listen IP keeps legacy settings bound to loopback', async () => {
+    const { service, config, cleanup } = setup()
+    try {
+        config.store.mcp.host = undefined
+        config.store.mcp.enabled = true
+        await service.refresh()
+        assert.match(service.address!, /^http:\/\/127\.0\.0\.1:\d+\/mcp$/)
+        assert.equal(service.error, null)
+    } finally { await cleanup() }
+})
+
+test('changing listen IP restarts the listener and disposes owned connections', async () => {
+    const { service, config, disposedAll, cleanup } = setup()
+    try {
+        const token = await service.createToken('Agent', newMCPPermissions())
+        config.store.mcp.enabled = true
+        await service.refresh()
+        const previousAddress = service.address!
+        const previousDisposals = disposedAll()
+        config.store.mcp.host = '127.0.0.2'
+        await service.refresh()
+        assert.equal(service.error, null)
+        assert.equal(service.address, previousAddress.replace('127.0.0.1', '127.0.0.2'))
+        assert.ok(disposedAll() > previousDisposals)
+        const response = await fetch(service.address!, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream' },
+            body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }),
+        })
+        assert.equal(response.status, 200)
+    } finally { await cleanup() }
+})
+
+test('token metadata saves do not restart a listener with the same IP and port', async () => {
+    const { service, config, disposedAll, cleanup } = setup()
+    try {
+        config.store.mcp.host = '127.0.0.2'
+        config.store.mcp.enabled = true
+        await service.refresh()
+        const previousAddress = service.address
+        const previousDisposals = disposedAll()
+        await service.createToken('Agent', newMCPPermissions())
+        await service.refresh()
+        assert.equal(service.address, previousAddress)
+        assert.equal(disposedAll(), previousDisposals)
+    } finally { await cleanup() }
+})
+
+test('invalid listen IP fails closed and can still be disabled', async () => {
+    const { service, config, cleanup } = setup()
+    try {
+        config.store.mcp.enabled = true
+        await service.refresh()
+        const previousAddress = service.address!
+        config.store.mcp.host = 'untrusted.example'
+        await service.refresh()
+        assert.equal(service.address, null)
+        assert.equal(service.error, 'MCP listen IP must be a valid IPv4 or IPv6 address')
+        await assert.rejects(fetch(previousAddress))
+        config.store.mcp.enabled = false
+        await service.refresh()
+        assert.equal(service.address, null)
+        assert.equal(service.error, null)
     } finally { await cleanup() }
 })
 

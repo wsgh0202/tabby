@@ -3,6 +3,7 @@ import { Server, StreamableHTTPServerTransport, CallToolRequestSchema, ListTools
 import { callMCPTool, canAccessConnection, MCPCatalog, MCPConnection, resolveMCPConnectionCapability } from './access'
 import { MCP_TOOLS, MCPToolError, validateMCPToolArguments } from './tools'
 import { MCPToken } from './tokens'
+import { DEFAULT_MCP_HOST, formatMCPAddress, getMCPAllowedHosts, normalizeMCPHost } from './listenAddress'
 
 export interface MCPServerOptions {
     authenticate: (token: string) => Promise<MCPToken|null>
@@ -16,18 +17,21 @@ export class MCPHTTPServer {
     port: number|null = null
     private http: HTTPServer|null = null
     private active = false
+    private host = DEFAULT_MCP_HOST
 
     constructor (private options: MCPServerOptions) { }
 
     get address (): string|null {
-        return this.port === null ? null : `http://127.0.0.1:${this.port}/mcp`
+        return this.port === null ? null : formatMCPAddress(this.host, this.port)
     }
 
-    async start (port: number|null, lastRandomPort: number|null): Promise<number> {
+    async start (port: number|null, lastRandomPort: number|null, host = DEFAULT_MCP_HOST): Promise<number> {
         if (port !== null && (!Number.isInteger(port) || port < 1 || port > 65535)) {
             throw new Error('MCP port must be between 1 and 65535')
         }
+        const listenHost = normalizeMCPHost(host)
         await this.stop()
+        this.host = listenHost
         const preferred = port ?? (Number.isInteger(lastRandomPort) && lastRandomPort! > 0 && lastRandomPort! <= 65535 ? lastRandomPort! : 0)
         try {
             await this.listen(preferred)
@@ -70,7 +74,7 @@ export class MCPHTTPServer {
         http.headersTimeout = 10000
         await new Promise<void>((resolve, reject) => {
             http.once('error', reject)
-            http.listen(port, '127.0.0.1', () => {
+            http.listen(port, this.host, () => {
                 http.removeListener('error', reject)
                 resolve()
             })
@@ -85,9 +89,9 @@ export class MCPHTTPServer {
 
     private async handle (request: IncomingMessage, response: ServerResponse): Promise<void> {
         response.setHeader('Cache-Control', 'no-store')
-        const allowedHosts = [`127.0.0.1:${this.port}`, `localhost:${this.port}`]
+        const allowedHosts = getMCPAllowedHosts(request.socket.localAddress, request.socket.localPort ?? 0)
         const allowedOrigins = allowedHosts.map(host => `http://${host}`)
-        if (!allowedHosts.includes(request.headers.host ?? '')
+        if (!allowedHosts.includes((request.headers.host ?? '').toLowerCase())
             || (request.headers.origin !== undefined && !allowedOrigins.includes(request.headers.origin))) {
             response.writeHead(403).end('Forbidden host or origin')
             return

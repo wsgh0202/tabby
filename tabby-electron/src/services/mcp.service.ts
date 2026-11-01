@@ -3,6 +3,7 @@ import { Inject, Injectable } from '@angular/core'
 import { BOOTSTRAP_DATA, BootstrapData, ConfigService, ProfilesService, VaultService } from 'tabby-core'
 import { MCPCatalog, MCPPermissions, validateMCPPermissions } from '../mcp/access'
 import { MCPHTTPServer } from '../mcp/server'
+import { DEFAULT_MCP_HOST, MCP_INVALID_HOST_MESSAGE, normalizeMCPHost } from '../mcp/listenAddress'
 import { MCPToken, MCPTokens } from '../mcp/tokens'
 import { isMCPTokenMetadata } from '../mcp/tokenDisplay'
 import { ElectronService } from './electron.service'
@@ -10,6 +11,7 @@ import { MCPConnectionsService } from './mcpConnections.service'
 
 export interface MCPSettings {
     enabled: boolean
+    host: string
     port: number|null
     lastRandomPort: number|null
     tokens: MCPToken[]
@@ -81,7 +83,11 @@ export class MCPService {
                 return
             }
             const { enabled, port, lastRandomPort } = this.settings
-            const signature = JSON.stringify({ enabled, port })
+            const configuredHost = (this.settings as Partial<MCPSettings>).host ?? DEFAULT_MCP_HOST
+            // Validate only while starting, so an invalid saved address cannot
+            // prevent the user from stopping the listener.
+            const host = enabled ? normalizeMCPHost(configuredHost) : configuredHost
+            const signature = JSON.stringify({ enabled, host, port })
             if (this.appliedSettings === signature) {
                 return
             }
@@ -89,7 +95,7 @@ export class MCPService {
             await this.server.stop()
             if (!this.canListen()) { return }
             if (enabled) {
-                const actualPort = await this.server.start(port, lastRandomPort)
+                const actualPort = await this.server.start(port, lastRandomPort, host)
                 if (!this.canListen()) { await this.server.stop(); return }
                 if (port === null && actualPort !== lastRandomPort) {
                     this.settings.lastRandomPort = actualPort
@@ -100,7 +106,13 @@ export class MCPService {
         }).catch(async error => {
             await this.server.stop()
             this.appliedSettings = null
-            this.error = error.code === 'EADDRINUSE' ? _('MCP port is already in use') : _('Could not start MCP server')
+            if (error.message === MCP_INVALID_HOST_MESSAGE) {
+                this.error = _('MCP listen IP must be a valid IPv4 or IPv6 address')
+            } else if (error.code === 'EADDRINUSE') {
+                this.error = _('MCP port is already in use')
+            } else {
+                this.error = _('Could not start MCP server')
+            }
         })
         return this.pending
     }
