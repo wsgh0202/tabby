@@ -20,7 +20,7 @@
                 button.btn.group-link(type='button', (click)='editor.selectedGroupId = entry.group.id', [attr.aria-current]='editor.selectedGroupId === entry.group.id ? "location" : null')
                     profile-icon([icon]='groupIcon(entry.group, editor.collapsedNavigation.has(entry.group.id))', [color]='entry.group.color ?? undefined')
                     span.group-name {{entry.group.name}}
-                    small.group-count {{editor.includedConnections(entry.group.id).length}}/{{editor.connectionsInGroup(entry.group.id).length}}
+                    small.group-count([class.has-access]='editor.includedConnections(entry.group.id).length > 0') {{editor.includedConnections(entry.group.id).length}}/{{editor.connectionsInGroup(entry.group.id).length}}
             p.text-muted.p-2(*ngIf='!editor.navigation.length', translate) No groups found.
     .policy-page
         .policy-toolbar

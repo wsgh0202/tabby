@@ -19,8 +19,9 @@
 .group-navigation-row.selected { background: var(--theme-bg-more-2); }
 .expand, .expand-placeholder { width: 1.25rem; flex: 0 0 1.25rem; padding: .25rem 0; font-size: .7rem; }
 .group-link { display: flex; align-items: center; gap: .35rem; flex: 1; min-width: 0; text-align: start; padding: .5rem 0; }
-.group-name { overflow-wrap: anywhere; }
-.group-count { margin-inline-start: auto; white-space: nowrap; font-variant-numeric: tabular-nums; opacity: .7; }
+.group-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.group-count { flex-shrink: 0; padding: 0 .25rem; border-radius: .1875rem; background: var(--theme-bg-more); color: var(--theme-fg-more-2); font-size: .6875rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.group-count.has-access { color: var(--theme-primary); background: color-mix(in srgb, var(--theme-primary) 16%, var(--theme-bg)); }
 profile-icon { display: inline-block; width: 1rem; flex: 0 0 1rem; }
 .policy-page { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
 .policy-toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .75rem; padding: .75rem 1rem; border-bottom: 1px solid var(--theme-bg-more-2); }
