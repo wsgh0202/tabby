@@ -13,6 +13,10 @@ function setup () {
         getCatalog: async () => ({ groups: [], connections: [] }),
         createToken: async (name, permissions) => { calls.push({ name, permissions }); return 'plaintext-once' },
         updateToken: async (id, permissions, name) => { calls.push({ id, permissions, name }) },
+        setTokenEnabled: async (id, enabled) => {
+            calls.push({ id, enabled })
+            mcp.settings.tokens = mcp.settings.tokens.map(token => token.id === id ? { ...token, enabled } : token)
+        },
         unlockVault: async () => { throw new Error('Vault unlock cancelled') },
     }
     const config = { fail: false, save: async () => { if (config.fail) { throw new Error('Write failed') }; calls.push('save') } }
@@ -161,6 +165,53 @@ test('cancelled vault unlock exposes a translatable message and clears busy stat
     await component.unlockVault()
     assert.equal(component.error, 'Vault unlock cancelled')
     assert.equal(component.busy, false)
+})
+
+test('token switches retain permissions and use the current metadata after each state change', async () => {
+    const { component, mcp, calls } = setup()
+    const token = { ...newMCPPermissions(), id: 'one', name: 'Agent' }
+    token.capabilities = ['connection_operations']
+    token.connections.ssh = { included: true, overrides: { access: true } }
+    mcp.settings.tokens = [token]
+    assert.equal(component.tokenEnabled(component.tokenRows[0].token), true)
+    const control = { reset: () => assert.fail('a successful change should not reset the control') }
+    await component.setTokenEnabled(token, false, control as any)
+    const disabled = component.tokenRows[0]
+    assert.equal(component.tokenEnabled(disabled.token), false)
+    assert.equal(disabled.capabilityCount, 1)
+    assert.equal(disabled.includedConnectionCount, 1)
+    await component.setTokenEnabled(disabled.token, true, control as any)
+    assert.equal(component.tokenEnabled(component.tokenRows[0].token), true)
+    assert.deepEqual(calls, [{ id: 'one', enabled: false }, { id: 'one', enabled: true }])
+    assert.deepEqual(mcp.settings.tokens[0].connections, token.connections)
+})
+
+test('a failed token state change restores the switch without retrying or clearing the error', async () => {
+    const { component, mcp } = setup()
+    const token = { ...newMCPPermissions(), id: 'one', name: 'Agent' }
+    mcp.settings.tokens = [token]
+    let attempts = 0
+    mcp.setTokenEnabled = async () => { attempts++; throw new Error('Write failed') }
+    const resets: boolean[] = []
+    const control = { reset: value => { resets.push(value); component.setTokenEnabled(token, value, control as any) } }
+    await component.setTokenEnabled(token, false, control as any)
+    assert.equal(attempts, 1)
+    assert.deepEqual(resets, [true])
+    assert.equal(component.tokenEnabled(component.tokenRows[0].token), true)
+    assert.equal(component.error, 'Write failed')
+    assert.equal(component.busy, false)
+})
+
+test('token state changes cannot race an active operation or a token editor', async () => {
+    const { component, calls } = setup()
+    const token = { ...newMCPPermissions(), id: 'one', name: 'Agent' }
+    const control = { reset: () => assert.fail('blocked actions do not change the control') }
+    component.busy = true
+    await component.setTokenEnabled(token, false, control as any)
+    component.busy = false
+    component.editorOpen = true
+    await component.setTokenEnabled(token, false, control as any)
+    assert.deepEqual(calls, [])
 })
 
 test('creation shows the token once and clearing/destroying the page forgets it', async () => {

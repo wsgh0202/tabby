@@ -8,7 +8,7 @@ import { MCP_GLOBAL_CAPABILITIES } from '../mcp/capabilityLabels'
 import { DEFAULT_MCP_HOST, formatMCPAddress, normalizeMCPHost } from '../mcp/listenAddress'
 import { MCPToken } from '../mcp/tokens'
 import { MCPService } from '../services/mcp.service'
-import { getMCPTokenLabel, isMCPTokenMetadata } from '../mcp/tokenDisplay'
+import { getMCPTokenLabel, isMCPTokenEnabled, isMCPTokenMetadata } from '../mcp/tokenDisplay'
 import { MCPTokenModalComponent } from './mcpTokenModal.component'
 
 interface MCPTokenRow {
@@ -28,6 +28,8 @@ export class MCPSettingsTabComponent implements OnDestroy {
     @HostBinding('class.content-box') contentBox = true
     toolCount = MCP_GLOBAL_CAPABILITIES.length
     tokenLabel = getMCPTokenLabel
+    tokenEnabled = isMCPTokenEnabled
+    tokenEnabledLabel = _('Enable token: {name}')
     host: string
     port: number|null
     editorOpen = false
@@ -36,7 +38,7 @@ export class MCPSettingsTabComponent implements OnDestroy {
     busy = false
     private editorModal: NgbModalRef|null = null
     private destroyed = false
-    private restoringEnabled = false
+    private restoringToggle = false
     private tokenRowsCache = new WeakMap<MCPToken, MCPTokenRow>()
 
     constructor (
@@ -138,14 +140,28 @@ export class MCPSettingsTabComponent implements OnDestroy {
     }
 
     async setEnabled (enabled: boolean, control: NgModel): Promise<void> {
-        if (this.restoringEnabled) { return }
+        if (this.restoringToggle) { return }
         await this.saveSettings(enabled)
         if (this.destroyed || enabled === this.mcp.settings.enabled) { return }
+        this.restoreToggle(control, this.mcp.settings.enabled)
+    }
+
+    async setTokenEnabled (token: MCPToken, enabled: boolean, control: NgModel): Promise<void> {
+        if (this.restoringToggle || this.busy || this.editorOpen || this.createdToken) { return }
+        await this.run(() => this.mcp.setTokenEnabled(token.id, enabled))
+        if (this.destroyed) { return }
+        const current = this.tokenRows.find(row => row.token.id === token.id)?.token
+        if (current && enabled !== this.tokenEnabled(current)) {
+            this.restoreToggle(control, this.tokenEnabled(current))
+        }
+    }
+
+    private restoreToggle (control: NgModel, enabled: boolean): void {
         // Commit the toggle's edited view before resetting a rejected change.
         // Reset also emits ngModelChange; ignore that notification, not the error.
         this.changeDetector.detectChanges()
-        this.restoringEnabled = true
-        try { control.reset(this.mcp.settings.enabled) } finally { this.restoringEnabled = false }
+        this.restoringToggle = true
+        try { control.reset(enabled) } finally { this.restoringToggle = false }
     }
 
     async openEditor (token?: MCPToken): Promise<void> {

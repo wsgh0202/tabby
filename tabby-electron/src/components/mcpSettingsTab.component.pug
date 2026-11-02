@@ -55,7 +55,7 @@ section
         button.btn.btn-primary.mt-2.ms-2(type='button', (click)='createdToken = null', translate) Done
     .mcp-section.token-list
         p.text-muted.p-3.mb-0(*ngIf='!tokenRows.length', translate) No tokens yet.
-        .token-row(*ngFor='let row of tokenRows; trackBy: trackTokenRow')
+        .token-row(*ngFor='let row of tokenRows; trackBy: trackTokenRow', [class.token-disabled]='!tokenEnabled(row.token)')
             .token-details
                 .token-name {{tokenLabel(row.token)}}
                 code.text-muted(*ngIf='row.token.name && row.token.preview') {{row.token.preview}}
@@ -64,5 +64,10 @@ section
                     span(translate='Included connections: {count}', [translateParams]='{count: row.includedConnectionCount}')
                 p.text-warning.mt-2.mb-0(*ngIf='row.invalidPermissions', translate) MCP permissions are invalid. Configure this token again before use.
             .token-actions
+                label.token-state
+                    .form-check.form-switch
+                        input.form-check-input(#tokenState='ngModel', type='checkbox', role='switch', [ngModel]='tokenEnabled(row.token)', (ngModelChange)='setTokenEnabled(row.token, $event, tokenState)', [disabled]='busy || editorOpen || !!createdToken', [attr.aria-label]='tokenEnabledLabel | translate: {name: tokenLabel(row.token)}')
+                    span(*ngIf='tokenEnabled(row.token)', translate) Enabled
+                    span.text-muted(*ngIf='!tokenEnabled(row.token)', translate) Disabled
                 button.btn.btn-secondary(type='button', (click)='openEditor(row.token)', [disabled]='busy || editorOpen || !!createdToken', translate) View details
                 button.btn.btn-danger(type='button', (click)='removeToken(row.token)', [disabled]='busy || editorOpen', translate) Revoke
