@@ -60,10 +60,11 @@ function setup (isMainWindow = true) {
     }
     const ipcRenderer = new EventEmitter()
     const disposedTokens: string[] = []
+    const operationHooks = { disposeToken: async (_id: string) => undefined }
     let disposedAll = 0
     const connections = {
         callOperation: async () => { throw new Error('Unexpected connection operation') },
-        disposeToken: id => { disposedTokens.push(id) },
+        disposeToken: async id => { disposedTokens.push(id); await operationHooks.disposeToken(id) },
         disposeAll: () => { disposedAll++ },
     }
     const service = new MCPService(config as any, profiles as any, vault as any, { isMainWindow } as any, { ipcRenderer } as any, connections as any)
@@ -74,7 +75,7 @@ function setup (isMainWindow = true) {
         await service.refresh()
         windowEvents.dispatchEvent(new Event('beforeunload'))
     }
-    return { service, config, vault, secrets, ipcRenderer, disposedTokens, disposedAll: () => disposedAll, cleanup }
+    return { service, config, vault, secrets, ipcRenderer, disposedTokens, operationHooks, disposedAll: () => disposedAll, cleanup }
 }
 
 test('service persists an automatic port and reuses it across serialized restarts', async () => {
@@ -370,6 +371,189 @@ test('service reuses credential hashes while live policy edits still change HTTP
         await service.updateToken(config.store.mcp.tokens[0].id, newMCPPermissions())
         assert.equal((await (await call()).json()).result.tools.length, 0)
         assert.equal(vault.loads, 1, 'saving policy metadata does not change the encrypted vault revision')
+    } finally { await cleanup() }
+})
+
+test('a disabled token is rejected by HTTP immediately and reuses its bearer after being enabled', async () => {
+    const { service, config, vault, secrets, disposedTokens, disposedAll, cleanup } = setup()
+    try {
+        const permissions = newMCPPermissions()
+        permissions.capabilities = ['connection_operations']
+        permissions.groups.group = { view_config: true }
+        permissions.connections.one = { included: true, overrides: {} }
+        const token = await service.createToken('Agent', permissions)
+        const other = await service.createToken('Other agent', newMCPPermissions())
+        const id = config.store.mcp.tokens[0].id
+        config.store.mcp.enabled = true
+        await service.refresh()
+        const address = service.address!
+        const call = (bearer: string) => fetch(address, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${bearer}`, 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream' },
+            body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }),
+        })
+        assert.equal((await call(token)).status, 200)
+        const credentialSnapshot = JSON.stringify(secrets)
+        const revision = vault.store
+        const listenerDisposals = disposedAll()
+        await service.setTokenEnabled(id, false)
+        assert.equal(config.store.mcp.tokens[0].enabled, false)
+        assert.equal((await call(token)).status, 401)
+        assert.equal((await call(other)).status, 200)
+        assert.deepEqual(disposedTokens, [id])
+        assert.equal(service.address, address)
+        assert.equal(disposedAll(), listenerDisposals, 'a token state change must not restart the shared server')
+        await service.updateToken(id, permissions, 'Renamed disabled token')
+        assert.equal(config.store.mcp.tokens[0].enabled, false, 'editing permissions and name cannot enable a disabled token')
+        assert.equal((await call(token)).status, 401)
+        const beforeEnableDisposals = disposedTokens.length
+        await service.setTokenEnabled(id, true)
+        const restored = await call(token)
+        assert.equal(restored.status, 200)
+        assert.ok((await restored.json()).result.tools.some(tool => tool.name === 'get_connection_config'))
+        assert.equal(disposedTokens.length, beforeEnableDisposals)
+        assert.equal(vault.store, revision)
+        assert.equal(JSON.stringify(secrets), credentialSnapshot)
+        assert.equal(vault.loads, 1, 'state updates do not rewrite the encrypted vault or invalidate cached hashes')
+    } finally { await cleanup() }
+})
+
+test('failed token state persistence restores metadata and does not dispose active sessions', async () => {
+    const { service, config, secrets, disposedTokens, cleanup } = setup()
+    try {
+        await service.createToken('Agent', newMCPPermissions())
+        const previous = config.store.mcp.tokens
+        const id = previous[0].id
+        const credentialSnapshot = JSON.stringify(secrets)
+        config.fail = true
+        await assert.rejects(service.setTokenEnabled(id, false), /Save failed/)
+        assert.equal(config.store.mcp.tokens, previous)
+        assert.equal(config.store.mcp.tokens[0].enabled, true)
+        assert.deepEqual(disposedTokens, [])
+        assert.equal(JSON.stringify(secrets), credentialSnapshot)
+        config.fail = false
+        await service.setTokenEnabled(id, false)
+        config.fail = true
+        const disabled = config.store.mcp.tokens
+        await assert.rejects(service.setTokenEnabled(id, true), /Save failed/)
+        assert.equal(config.store.mcp.tokens, disabled)
+        assert.equal(config.store.mcp.tokens[0].enabled, false)
+        assert.deepEqual(disposedTokens, [id])
+        config.fail = false
+    } finally { await cleanup() }
+})
+
+test('state changes and permission edits are serialized without losing token metadata', async () => {
+    const { service, config, disposedTokens, cleanup } = setup()
+    try {
+        await service.createToken('Agent', newMCPPermissions())
+        const id = config.store.mcp.tokens[0].id
+        const permissions = newMCPPermissions()
+        permissions.capabilities = ['connection_operations']
+        permissions.connections.one = { included: true, overrides: { access: true } }
+        await Promise.all([
+            service.setTokenEnabled(id, false),
+            service.updateToken(id, permissions, 'Renamed'),
+        ])
+        assert.equal(config.store.mcp.tokens[0].enabled, false)
+        assert.equal(config.store.mcp.tokens[0].name, 'Renamed')
+        assert.deepEqual(config.store.mcp.tokens[0].connections, permissions.connections)
+        assert.deepEqual(disposedTokens, [id, id])
+        await Promise.all([
+            service.setTokenEnabled(id, true),
+            service.updateToken(id, newMCPPermissions(), 'Changed again'),
+        ])
+        assert.equal(config.store.mcp.tokens[0].enabled, true)
+        assert.equal(config.store.mcp.tokens[0].name, 'Changed again')
+        assert.deepEqual(config.store.mcp.tokens[0].capabilities, [])
+    } finally { await cleanup() }
+})
+
+test('reloaded disabled token metadata closes only its operations without restarting the listener', async () => {
+    const { service, config, secrets, disposedTokens, disposedAll, cleanup } = setup()
+    try {
+        await service.createToken('Agent', newMCPPermissions())
+        await service.createToken('Other agent', newMCPPermissions())
+        const id = config.store.mcp.tokens[0].id
+        config.store.mcp.enabled = true
+        await service.refresh()
+        const address = service.address
+        const listenerDisposals = disposedAll()
+        const credentials = JSON.stringify(secrets)
+        // Another window saves configuration; this window receives new records
+        // and changed$, rather than calling its local setTokenEnabled method.
+        config.store.mcp.tokens = config.store.mcp.tokens.map(token => token.id === id ? { ...token, enabled: false } : token)
+        config.changed$.next()
+        await service.refresh()
+        assert.ok(disposedTokens.length > 0)
+        assert.deepEqual([...new Set(disposedTokens)], [id])
+        assert.equal(service.address, address)
+        assert.equal(disposedAll(), listenerDisposals)
+        const afterDisable = disposedTokens.length
+        config.store.mcp.tokens = config.store.mcp.tokens.map(token => token.id === id ? { ...token, enabled: true } : token)
+        config.changed$.next()
+        await service.refresh()
+        assert.equal(disposedTokens.length, afterDisable, 'enabling does not close operations')
+        config.store.mcp.tokens = config.store.mcp.tokens.map(token => token.id === id ? { ...token, enabled: false } : token)
+        config.changed$.next()
+        await service.refresh()
+        assert.ok(disposedTokens.length > afterDisable, 'a later disable must not be skipped by a persistent disabled-ID cache')
+        assert.deepEqual([...new Set(disposedTokens)], [id])
+        assert.equal(JSON.stringify(secrets), credentials)
+        assert.equal(disposedAll(), listenerDisposals)
+    } finally { await cleanup() }
+})
+
+test('a local disable waits for and shares the main-window configuration cleanup', { timeout: 2000 }, async () => {
+    const { service, config, disposedTokens, operationHooks, cleanup } = setup()
+    let release: () => void = () => undefined
+    let entered: () => void = () => undefined
+    const gate = new Promise<void>(resolve => { release = resolve })
+    const closing = new Promise<void>(resolve => { entered = resolve })
+    try {
+        await service.createToken('Agent', newMCPPermissions())
+        const id = config.store.mcp.tokens[0].id
+        config.store.mcp.enabled = true
+        await service.refresh()
+        await service.refresh()
+        operationHooks.disposeToken = async () => { entered(); await gate }
+        let finished = false
+        const disabling = service.setTokenEnabled(id, false).then(() => { finished = true })
+        await closing
+        await Promise.resolve()
+        const finishedBeforeClose = finished
+        const callsBeforeClose = [...disposedTokens]
+        release()
+        await disabling
+        assert.equal(finishedBeforeClose, false, 'the API cannot finish before native operations close')
+        assert.deepEqual(callsBeforeClose, [id], 'local transaction and background refresh share one in-flight cleanup')
+        assert.equal(finished, true)
+        assert.equal(config.store.mcp.tokens[0].enabled, false)
+    } finally {
+        release()
+        await cleanup()
+    }
+})
+
+test('state changes reject missing or revoked token IDs and invalid state values without saving', async () => {
+    const { service, config, secrets, disposedTokens, cleanup } = setup()
+    try {
+        await assert.rejects(service.setTokenEnabled('missing', false), /no longer exists/)
+        await service.createToken('Agent', newMCPPermissions())
+        const id = config.store.mcp.tokens[0].id
+        const beforeInvalid = config.saves
+        for (const state of ['false', null, 0]) {
+            await assert.rejects(service.setTokenEnabled(id, state as any), /Invalid MCP token state/)
+        }
+        assert.equal(config.saves, beforeInvalid)
+        assert.equal(config.store.mcp.tokens[0].enabled, true)
+        assert.deepEqual(disposedTokens, [])
+        await service.removeToken(id)
+        const afterRevocation = config.saves
+        await assert.rejects(service.setTokenEnabled(id, true), /no longer exists/)
+        assert.equal(config.saves, afterRevocation)
+        assert.equal(config.store.mcp.tokens.length, 0)
+        assert.equal(secrets.length, 0)
     } finally { await cleanup() }
 })
 

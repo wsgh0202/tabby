@@ -70,6 +70,14 @@ msgstr "Edit permissions"
 msgid "Enable MCP server"
 msgstr "Enable MCP server"
 
+#: tabby-electron/src/components/mcpSettingsTab.component.ts
+msgid "Enable token: {name}"
+msgstr "Enable token: {name}"
+
+#: tabby-electron/src/services/mcp.service.ts
+msgid "Invalid MCP token state"
+msgstr "Invalid MCP token state"
+
 #: tabby-electron/src/components/mcpSettingsTab.component.pug
 msgid "Individual selections grant only those connections. Their groups are visible, but other connections in those groups remain hidden."
 msgstr "Individual selections grant only those connections. Their groups are visible, but other connections in those groups remain hidden."

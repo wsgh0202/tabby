@@ -3,7 +3,7 @@ import { test } from 'node:test'
 import type { Vault, VaultSecret } from 'tabby-core'
 import { MCPTokens, MCPToken, MCPTokenVault, hashMCPToken, MCP_TOKEN_ID_PREFIX } from '../src/mcp/tokens'
 import { newMCPPermissions } from '../src/mcp/access'
-import { getMCPTokenLabel, isMCPTokenMetadata, previewMCPToken } from '../src/mcp/tokenDisplay'
+import { getMCPTokenLabel, isMCPTokenEnabled, isMCPTokenMetadata, previewMCPToken } from '../src/mcp/tokenDisplay'
 
 function setup (withRevision = false) {
     const secrets: VaultSecret[] = []
@@ -65,6 +65,55 @@ test('authentication observes edits, revocations and vault deletion immediately'
     assert.equal(await tokens.authenticate(created.token), null)
 })
 
+test('disabling and re-enabling a token uses current metadata without changing its cached credential', async () => {
+    const { tokens, entries, secrets, state } = setup(true)
+    const permissions = newMCPPermissions()
+    permissions.capabilities = ['connection_operations']
+    permissions.connections.one = { included: true, overrides: { access: true } }
+    const created = await tokens.create('Agent', permissions)
+    assert.equal(created.entry.enabled, true)
+    delete created.entry.enabled
+    assert.equal(isMCPTokenEnabled(created.entry), true, 'entries without the new field retain their enabled state')
+    entries.push(created.entry)
+    assert.equal(await tokens.authenticate(created.token), entries[0])
+    const stored = JSON.stringify(secrets)
+    entries[0] = { ...entries[0], enabled: false }
+    assert.equal(isMCPTokenEnabled(entries[0]), false)
+    assert.equal(await tokens.authenticate(created.token), null)
+    entries[0] = { ...entries[0], enabled: true }
+    assert.equal(await tokens.authenticate(created.token), entries[0])
+    assert.equal(state.loads, 1, 'the hash cache must never cache a token enabled decision')
+    assert.equal(JSON.stringify(secrets), stored)
+    assert.deepEqual(entries[0].connections, permissions.connections)
+})
+
+test('disabling a token during credential loading denies the in-flight authentication', async () => {
+    const { tokens, vault, entries, secrets, state } = setup(true)
+    const created = await tokens.create('Agent', newMCPPermissions())
+    entries.push(created.entry)
+    const pending = deferredVault()
+    vault.load = async () => { state.loads++; return pending.promise }
+    const authentication = tokens.authenticate(created.token)
+    entries[0] = { ...entries[0], enabled: false }
+    pending.resolve({ config: {}, secrets })
+    assert.equal(await authentication, null)
+    entries[0] = { ...entries[0], enabled: true }
+    assert.equal(await tokens.authenticate(created.token), entries[0])
+    assert.equal(state.loads, 1)
+})
+
+test('malformed persisted enabled values fail closed', async () => {
+    const { tokens, entries } = setup(true)
+    const created = await tokens.create('Agent', newMCPPermissions())
+    for (const enabled of [null, 'false', 'true', 0, 1, {}, []]) {
+        entries[0] = { ...created.entry, enabled } as any
+        assert.equal(isMCPTokenMetadata(entries[0]), false)
+        assert.equal(await tokens.authenticate(created.token), null)
+    }
+    entries[0] = { ...created.entry, enabled: true }
+    assert.equal(await tokens.authenticate(created.token), entries[0])
+})
+
 test('locked or disabled vaults reject requests without prompting', async () => {
     const { tokens, state, entries } = setup()
     const created = await tokens.create('Agent', newMCPPermissions())
@@ -122,6 +171,8 @@ test('token metadata validation does not infer or require a supported policy', (
     const valid = { id: 'id', name: '' }
     assert.equal(isMCPTokenMetadata(valid), true)
     assert.equal(isMCPTokenMetadata({ ...valid, preview: 'preview' }), true)
+    assert.equal(isMCPTokenMetadata({ ...valid, enabled: true }), true)
+    assert.equal(isMCPTokenMetadata({ ...valid, enabled: false }), true)
     assert.equal(isMCPTokenMetadata({ ...valid, tools: ['list_connections'] }), true)
     assert.equal(isMCPTokenMetadata(Object.assign(Object.create(null), valid)), true)
     for (const invalid of [null, 1, 'token', [], {}, { name: '' }, { id: '', name: '' }, { id: 'id', name: 1 }, { ...valid, preview: 1 }, new Date()]) {

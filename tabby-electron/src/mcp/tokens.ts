@@ -2,7 +2,7 @@ import { marker as _ } from '@biesbjerg/ngx-translate-extract-marker'
 import { createHash, randomBytes, timingSafeEqual } from 'crypto'
 import type { Vault, VaultSecret } from 'tabby-core'
 import { MCPPermissions, readMCPPermissions, validateMCPPermissions } from './access'
-import { getMCPTokenLabel, isMCPTokenMetadata, previewMCPToken } from './tokenDisplay'
+import { getMCPTokenLabel, isMCPTokenEnabled, isMCPTokenMetadata, previewMCPToken } from './tokenDisplay'
 
 export const MCP_TOKEN_TYPE = 'custom:password'
 export const MCP_TOKEN_ID_PREFIX = 'mcp:token:'
@@ -12,6 +12,7 @@ export interface MCPToken extends MCPPermissions {
     id: string
     name: string
     preview?: string
+    enabled?: boolean
 }
 
 export interface MCPTokenVault {
@@ -55,7 +56,7 @@ export class MCPTokens {
         const token = randomBytes(32).toString('hex')
         const hash = hashMCPToken(token)
         const id = `${MCP_TOKEN_ID_PREFIX}${hash}`
-        const entry: MCPToken = { ...JSON.parse(JSON.stringify(permissions)), id, name, preview: previewMCPToken(token) }
+        const entry: MCPToken = { ...JSON.parse(JSON.stringify(permissions)), id, name, preview: previewMCPToken(token), enabled: true }
         await this.vault.addSecret({
             type: MCP_TOKEN_TYPE,
             key: { id, description: `${MCP_TOKEN_DESCRIPTION_PREFIX}${getMCPTokenLabel(entry)}` },
@@ -90,11 +91,12 @@ export class MCPTokens {
         if (!storedHash || !timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(storedHash, 'hex'))) {
             return null
         }
-        // Read permissions after awaiting the vault, so edits/revocations take effect immediately.
+        // Re-read state and permissions after awaiting the vault. Only credential
+        // hashes are cached; disabling a token must affect every request.
         const records = this.getTokens()
         if (!Array.isArray(records)) { return null }
         const entry = records.find(item => isMCPTokenMetadata(item) && item.id === id)
-        return entry && readMCPPermissions(entry) ? entry : null
+        return entry && isMCPTokenEnabled(entry) && readMCPPermissions(entry) ? entry : null
     }
 
     private getRevision (): object|null {

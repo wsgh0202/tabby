@@ -72,6 +72,14 @@ msgstr "编辑权限"
 msgid "Enable MCP server"
 msgstr "启用 MCP 服务器"
 
+#: tabby-electron/src/components/mcpSettingsTab.component.ts
+msgid "Enable token: {name}"
+msgstr "启用令牌：{name}"
+
+#: tabby-electron/src/services/mcp.service.ts
+msgid "Invalid MCP token state"
+msgstr "无效的 MCP 令牌状态"
+
 #: tabby-electron/src/components/mcpSettingsTab.component.pug
 msgid "Individual selections grant only those connections. Their groups are visible, but other connections in those groups remain hidden."
 msgstr "单独选择仅授予对所选连接的访问权限。这些连接所属的分组可见，但分组中的其他连接仍会隐藏。"

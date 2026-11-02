@@ -9,6 +9,12 @@ export function isMCPTokenMetadata (value: unknown): boolean {
     return typeof record.id === 'string' && record.id.length > 0
         && typeof record.name === 'string'
         && (record.preview === undefined || typeof record.preview === 'string')
+        && (record.enabled === undefined || typeof record.enabled === 'boolean')
+}
+
+/** Entries created before the switch was introduced remain enabled. */
+export function isMCPTokenEnabled (token: MCPToken): boolean {
+    return token.enabled !== false
 }
 
 /** Keep only a non-authenticating hint; the full bearer token is shown once. */
