@@ -8,7 +8,7 @@ import { DEFAULT_MCP_HOST, formatMCPAddress, getMCPAllowedHosts, normalizeMCPHos
 export interface MCPServerOptions {
     authenticate: (token: string) => Promise<MCPToken|null>
     getCatalog: () => Promise<MCPCatalog>
-    callOperation?: (tokenId: string, connection: MCPConnection, name: string, args: Record<string, unknown>, authorize: () => Promise<boolean>, origin: MCPRequestOrigin) => Promise<unknown>
+    callOperation?: (tokenId: string, connection: MCPConnection, name: string, args: Record<string, unknown>, authorize: () => Promise<boolean>, origin: MCPRequestOrigin, closeTab?: boolean) => Promise<unknown>
     disposeOperations?: () => Promise<void>
 }
 
@@ -169,7 +169,10 @@ export class MCPHTTPServer {
                             && resolveMCPConnectionCapability(checkedToken, currentCatalog, target.id, definition.capability!)
                     }
                     if (!await canOperate()) { throw new Error('Connection access denied') }
-                    result = await this.options.callOperation(token.id, connection, definition.name, args, canOperate, { tokenName: token.name, source })
+                    // This local presentation policy is never part of tool metadata or results.
+                    const closeTab = definition.name === 'close_connection'
+                        && resolveMCPConnectionCapability(token, catalog, connection.id, 'close_tab')
+                    result = await this.options.callOperation(token.id, connection, definition.name, args, canOperate, { tokenName: token.name, source }, closeTab)
                     // A completed read must not expose data after a permission change.
                     if (!await canOperate()) { throw new Error('Connection access denied') }
                 }

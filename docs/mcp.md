@@ -52,7 +52,7 @@ scrolling form. Closing a modified token draft asks whether to discard it, and a
 failed save keeps the draft open for retrying.
 
 Connection selection controls which connections the agent can discover and use.
-It is independent of the five capabilities below. A selected connection can appear
+It is independent of the capabilities below. A selected connection can appear
 in directory results with every capability disabled; reading its configuration
 still requires **View configuration**. Deselecting a connection retains its
 capability overrides but denies all operations on it. Selecting a group toggles
@@ -63,8 +63,19 @@ its existing descendant connections; it does not select future connections.
 | View configuration | `get_connection_config` |
 | Edit configuration | `update_connection_config` |
 | Access connection | `open_connection`, `read_connection`, `write_connection`, `close_connection` |
+| Close tab | Local behavior for `close_connection`; requires Access connection |
 | Upload | `upload_file` |
 | Download | `download_file` |
+
+**Close tab** is disabled by default, including for existing tokens
+without this setting. When the agent calls `close_connection`, Tabby disconnects
+the terminal but keeps its tab, commands and output available for review. Enable
+this capability to also remove the tab. It follows the same group inheritance,
+connection overrides and batch configuration as other capabilities. It does not
+grant connection access or change the tool descriptions, arguments or results
+visible to the agent. Automatic cleanup on expiry, revocation or server shutdown
+continues to remove managed tabs; tabs already retained by an explicit close are
+no longer managed by MCP.
 
 The package also includes three directory tools, which are always available while
 the package is enabled:
