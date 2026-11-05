@@ -3032,3 +3032,21 @@ msgstr "Agent 侧"
 
 msgid "Connection side"
 msgstr "连接侧"
+
+msgid "MCP terminal origin"
+msgstr "MCP 终端来源"
+
+msgid "Terminal opened via MCP"
+msgstr "由 MCP 打开的终端"
+
+msgid "Source"
+msgstr "来源"
+
+msgid "Associated connection"
+msgstr "关联连接"
+
+msgid "Session ID"
+msgstr "会话 ID"
+
+msgid "Unnamed token"
+msgstr "未命名令牌"

@@ -1,6 +1,6 @@
 import { Observable, Subject, takeWhile } from 'rxjs'
 import { Component, Injectable, ViewChild, ViewContainerRef, EmbeddedViewRef, AfterViewInit, OnDestroy, Injector } from '@angular/core'
-import { BaseTabComponent, BaseTabProcess, GetRecoveryTokenOptions } from './baseTab.component'
+import { BaseTabComponent, BaseTabProcess, GetRecoveryTokenOptions, MCPTabOrigin } from './baseTab.component'
 import { TabRecoveryProvider, RecoveryToken } from '../api/tabRecovery'
 import { TabsService, NewTabParameters } from '../services/tabs.service'
 import { HotkeysService } from '../services/hotkeys.service'
@@ -804,6 +804,10 @@ export class SplitTabComponent extends BaseTabComponent implements AfterViewInit
             tab.clearActivity()
         }
         super.clearActivity()
+    }
+
+    get mcpOrigins (): MCPTabOrigin[] {
+        return this.getAllTabs().flatMap(tab => tab.mcpOrigins)
     }
 
     get icon (): string|null {

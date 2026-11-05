@@ -16,7 +16,8 @@ profile-icon(
     i.fas.fa-thumbtack
 
 .name(
-    [class.no-hover]='config.store.terminal.hideCloseButton && config.store.terminal.hideTabOptionsButton'
+    [ngbTooltip]='tab.mcpOrigins.length ? (tab.customTitle || tab.title) : null',
+    [class.no-hover]='config.store.terminal.hideCloseButton && config.store.terminal.hideTabOptionsButton',
     cdkDrag,
     cdkDragRootElement='tab-header',
     [cdkDragData]='tab',
@@ -24,7 +25,9 @@ profile-icon(
     (cdkDragEnded)='onTabDragEnd()',
 ) {{tab.customTitle || tab.title}}
 
-.buttons
+mcp-tab-badge(*ngIf='tab.mcpOrigins.length', [origins]='tab.mcpOrigins')
+
+.buttons([class.mcp-buttons]='tab.mcpOrigins.length > 0')
     button(*ngIf='!config.store.terminal.hideTabOptionsButton',(click)='onContextMenu($event)') !{require('../icons/tab-options.svg')}
 
     button(*ngIf='!config.store.terminal.hideCloseButton && !tab.effectivelyPinned',(click)='app.closeTab(tab, true)') &times;
