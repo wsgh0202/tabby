@@ -8,8 +8,13 @@ import { DEFAULT_MCP_HOST, formatMCPAddress, getMCPAllowedHosts, normalizeMCPHos
 export interface MCPServerOptions {
     authenticate: (token: string) => Promise<MCPToken|null>
     getCatalog: () => Promise<MCPCatalog>
-    callOperation?: (tokenId: string, connection: MCPConnection, name: string, args: Record<string, unknown>, authorize: () => Promise<boolean>) => Promise<unknown>
+    callOperation?: (tokenId: string, connection: MCPConnection, name: string, args: Record<string, unknown>, authorize: () => Promise<boolean>, origin: MCPRequestOrigin) => Promise<unknown>
     disposeOperations?: () => Promise<void>
+}
+
+export interface MCPRequestOrigin {
+    tokenName: string
+    source: string
 }
 
 /** Stateless SDK transports keep every request bound to its current bearer token. */
@@ -88,6 +93,8 @@ export class MCPHTTPServer {
     }
 
     private async handle (request: IncomingMessage, response: ServerResponse): Promise<void> {
+        // Capture the TCP peer before any awaits; never trust forwarded headers.
+        const source = (request.socket.remoteAddress ?? '').replace(/^::ffff:/, '')
         response.setHeader('Cache-Control', 'no-store')
         const allowedHosts = getMCPAllowedHosts(request.socket.localAddress, request.socket.localPort ?? 0)
         const allowedOrigins = allowedHosts.map(host => `http://${host}`)
@@ -162,7 +169,7 @@ export class MCPHTTPServer {
                             && resolveMCPConnectionCapability(checkedToken, currentCatalog, target.id, definition.capability!)
                     }
                     if (!await canOperate()) { throw new Error('Connection access denied') }
-                    result = await this.options.callOperation(token.id, connection, definition.name, args, canOperate)
+                    result = await this.options.callOperation(token.id, connection, definition.name, args, canOperate, { tokenName: token.name, source })
                     // A completed read must not expose data after a permission change.
                     if (!await canOperate()) { throw new Error('Connection access denied') }
                 }

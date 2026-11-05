@@ -17,6 +17,7 @@ import { PromptModalComponent } from './components/promptModal.component'
 import { SafeModeModalComponent } from './components/safeModeModal.component'
 import { StartPageComponent } from './components/startPage.component'
 import { TabHeaderComponent } from './components/tabHeader.component'
+import { MCPTabBadgeComponent } from './components/mcpTabBadge.component'
 import { TitleBarComponent } from './components/titleBar.component'
 import { ToggleComponent } from './components/toggle.component'
 import { WindowControlsComponent } from './components/windowControls.component'
@@ -112,6 +113,7 @@ const PROVIDERS = [
         StartPageComponent,
         TabBodyComponent,
         TabHeaderComponent,
+        MCPTabBadgeComponent,
         TitleBarComponent,
         ToggleComponent,
         WindowControlsComponent,

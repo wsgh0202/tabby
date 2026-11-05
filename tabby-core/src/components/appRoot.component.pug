@@ -45,7 +45,8 @@ title-bar(
                     [@.disabled]='hasVerticalTabs() || !config.store.accessibility.animations',
                     (click)='app.selectTab(tab)',
                     [class.fully-draggable]='hostApp.platform !== Platform.macOS',
-                    [ngbTooltip]='tab.customTitle || tab.title'
+                    [ngbTooltip]='tab.customTitle || tab.title',
+                    [disableTooltip]='tab.mcpOrigins.length > 0'
                 )
 
             .btn-group.background

@@ -13,6 +13,7 @@ export interface MCPOwnedSession {
 }
 
 export interface MCPSessionCallbacks {
+    sessionId: string
     output: (data: Buffer) => void
     closed: () => void
     authorize: () => Promise<boolean>
@@ -76,6 +77,7 @@ export class MCPRuntime {
         try {
             if (!await guard()) { throw new MCPToolError('Connection access denied.') }
             entry.session = await create({
+                sessionId,
                 output: data => this.append(entry, data),
                 closed: () => { entry.ended = true },
                 authorize: guard,

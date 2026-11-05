@@ -16,6 +16,15 @@ export interface GetRecoveryTokenOptions {
     includeState: boolean
 }
 
+/** Snapshot of the request that opened an MCP-owned terminal. Never persisted. */
+export interface MCPTabOrigin {
+    tokenName: string
+    source: string
+    connectionName: string
+    connectionType: string
+    sessionId: string
+}
+
 /**
  * Abstract base class for custom tab components
  */
@@ -25,6 +34,12 @@ export abstract class BaseTabComponent extends BaseComponent {
      * Parent tab (usually a SplitTabComponent)
      */
     parent: BaseTabComponent|null = null
+
+    mcpOrigin: MCPTabOrigin|null = null
+
+    get mcpOrigins (): MCPTabOrigin[] {
+        return this.mcpOrigin ? [this.mcpOrigin] : []
+    }
 
     /**
      * Current tab title
