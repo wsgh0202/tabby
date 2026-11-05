@@ -201,9 +201,12 @@ function adapterFixture (profile: any, ready = true, Service = MCPConnectionsSer
 test('terminal adapter creates an independent profile and disposes only its own tab', async () => {
     const profile = { id: 'local', type: 'local', name: 'Shell', options: { restoreFromPTYID: 'existing-user-pty' }, behaviorOnSessionEnd: 'reconnect' }
     const fixture = adapterFixture(profile)
-    const result: any = await fixture.adapter.callOperation('token', profile, 'open_connection', {}, async () => true)
+    const result: any = await fixture.adapter.callOperation('token', profile, 'open_connection', {}, async () => true, { tokenName: 'Development agent', source: '192.0.2.10' })
     assert.ok(result.sessionId)
     assert.equal(fixture.opened.length, 1)
+    assert.deepEqual(fixture.opened[0].mcpOrigin, {
+        tokenName: 'Development agent', source: '192.0.2.10', connectionName: 'Shell', connectionType: 'local', sessionId: result.sessionId,
+    })
     assert.equal(fixture.opened[0].profile.options.restoreFromPTYID, null)
     assert.equal(fixture.opened[0].profile.options.reuseSession, false)
     assert.equal(fixture.opened[0].profile.behaviorOnSessionEnd, 'close')

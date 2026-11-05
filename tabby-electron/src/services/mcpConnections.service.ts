@@ -10,6 +10,7 @@ import type { BaseTerminalTabComponent, BaseSession } from 'tabby-terminal'
 import type { SSHProfile, SSHSession, SFTPSession, SSHTabComponent } from 'tabby-ssh'
 import { MCPRuntime, MCPOwnedSession, MCPSessionCallbacks, MCPRuntimeProfile, MCP_MAX_FILE_BYTES, decodeMCPFile, publicMCPProfile, readMCPFileChunks, updateMCPProfile, validateMCPFilePath } from '../mcp/runtime'
 import { MCPToolError } from '../mcp/tools'
+import type { MCPRequestOrigin } from '../mcp/server'
 
 interface ConnectionRef {
     id: string
@@ -43,6 +44,7 @@ export class MCPConnectionsService {
         name: string,
         args: Record<string, unknown>,
         authorize: () => Promise<boolean>,
+        origin?: MCPRequestOrigin,
     ): Promise<unknown> {
         await this.check(authorize)
         if (name === 'read_connection') {
@@ -55,7 +57,7 @@ export class MCPConnectionsService {
             return this.runtime.close(tokenId, connection.id, args.sessionId as string)
         }
         if (name === 'open_connection') {
-            return this.runtime.open(tokenId, connection.id, callbacks => this.openTerminal(tokenId, connection.id, args, callbacks), authorize)
+            return this.runtime.open(tokenId, connection.id, callbacks => this.openTerminal(tokenId, connection.id, args, callbacks, origin), authorize)
         }
         if (name === 'update_connection_config') {
             const update = this.configUpdates.then(() => this.updateConfiguration(connection.id, args.changes, authorize))
@@ -111,7 +113,7 @@ export class MCPConnectionsService {
         return { connectionId: id, updated: true }
     }
 
-    private async openTerminal (tokenId: string, id: string, args: Record<string, unknown>, callbacks: MCPSessionCallbacks): Promise<MCPOwnedSession> {
+    private async openTerminal (tokenId: string, id: string, args: Record<string, unknown>, callbacks: MCPSessionCallbacks, origin?: MCPRequestOrigin): Promise<MCPOwnedSession> {
         const profile = this.fullProfile(await this.getProfile(id))
         profile.behaviorOnSessionEnd = 'close'
         profile.options = { ...profile.options, restoreFromPTYID: null, reuseSession: false }
@@ -132,6 +134,13 @@ export class MCPConnectionsService {
             }
         }
         const baseTab = this.injector.get(AppService).openNewTab(params)
+        baseTab.mcpOrigin = {
+            tokenName: origin?.tokenName ?? '',
+            source: origin?.source ?? '',
+            connectionName: profile.name,
+            connectionType: profile.type,
+            sessionId: callbacks.sessionId,
+        }
         const tab = baseTab as BaseTerminalTabComponent<any>
         if (!tab.sessionChanged$ || !tab.binaryOutput$ || typeof tab.sendInput !== 'function') {
             baseTab.destroy()

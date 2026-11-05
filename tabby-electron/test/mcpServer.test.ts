@@ -15,7 +15,7 @@ function setup () {
     const token = { ...newMCPPermissions(), id: 'test', name: 'Agent' }
     token.capabilities = ['connection_operations']
     token.connections.one = { included: true, overrides: {} }
-    const state = { valid: true, calls: [] as string[], operation: async () => ({ ok: true }) as unknown }
+    const state = { valid: true, calls: [] as string[], origin: null as { tokenName: string, source: string }|null, operation: async () => ({ ok: true }) as unknown }
     const server = new MCPHTTPServer({
         authenticate: async value => state.valid && value === bearer ? token : null,
         getCatalog: async () => ({
@@ -25,7 +25,8 @@ function setup () {
                 { id: 'two', name: 'Two', type: 'ssh', group: 'group' },
             ],
         }),
-        callOperation: async (_tokenId, _connection, name, _args, authorize) => {
+        callOperation: async (_tokenId, _connection, name, _args, authorize, origin) => {
+            state.origin = origin
             state.calls.push(name)
             if (!await authorize()) { throw new Error('Denied') }
             return state.operation()
@@ -60,6 +61,19 @@ test('official SDK clients can initialize, list and call tools over Streamable H
         await client.close()
         await server.stop()
     }
+})
+
+test('opening origin uses the authenticated token and TCP peer, not client-supplied headers', async () => {
+    const { server, state, token } = setup()
+    token.connections.one.overrides.access = true
+    try {
+        await server.start(null, null)
+        const result = await rpc(server, 'tools/call', { name: 'open_connection', arguments: { connectionId: 'one' } }, {
+            'X-Forwarded-For': '203.0.113.99', 'X-Real-IP': '203.0.113.98', 'User-Agent': 'Untrusted agent',
+        })
+        assert.equal(result.body.result.isError, undefined)
+        assert.deepEqual(state.origin, { tokenName: 'Agent', source: '127.0.0.1' })
+    } finally { await server.stop() }
 })
 
 test('tool permissions are checked again after asynchronous catalog loading', async () => {
