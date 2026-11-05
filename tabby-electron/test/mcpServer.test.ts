@@ -15,7 +15,7 @@ function setup () {
     const token = { ...newMCPPermissions(), id: 'test', name: 'Agent' }
     token.capabilities = ['connection_operations']
     token.connections.one = { included: true, overrides: {} }
-    const state = { valid: true, calls: [] as string[], origin: null as { tokenName: string, source: string }|null, operation: async () => ({ ok: true }) as unknown }
+    const state = { valid: true, calls: [] as string[], closeTab: false, origin: null as { tokenName: string, source: string }|null, operation: async () => ({ ok: true }) as unknown }
     const server = new MCPHTTPServer({
         authenticate: async value => state.valid && value === bearer ? token : null,
         getCatalog: async () => ({
@@ -25,7 +25,8 @@ function setup () {
                 { id: 'two', name: 'Two', type: 'ssh', group: 'group' },
             ],
         }),
-        callOperation: async (_tokenId, _connection, name, _args, authorize, origin) => {
+        callOperation: async (_tokenId, _connection, name, _args, authorize, origin, closeTab) => {
+            state.closeTab = closeTab ?? false
             state.origin = origin
             state.calls.push(name)
             if (!await authorize()) { throw new Error('Denied') }
@@ -44,6 +45,30 @@ async function rpc (server: MCPHTTPServer, method: string, params: object = {}, 
     const body = response.headers.get('content-type')?.includes('application/json') ? await response.json() : await response.text()
     return { status: response.status, body }
 }
+
+test('close-tab policy defaults off, inherits and overrides without changing the agent protocol', async () => {
+    const { server, token, state } = setup()
+    token.groups.group = { access: true }
+    state.operation = async () => ({ closed: true })
+    try {
+        await server.start(null, null)
+        const tools = (await rpc(server, 'tools/list')).body.result.tools
+        const close = () => rpc(server, 'tools/call', { name: 'close_connection', arguments: { connectionId: 'one', sessionId: 'session' } })
+        const initial = (await close()).body.result
+        assert.equal(state.closeTab, false)
+        token.groups.group.close_tab = true
+        assert.deepEqual((await close()).body.result, initial)
+        assert.equal(state.closeTab, true)
+        assert.deepEqual((await rpc(server, 'tools/list')).body.result.tools, tools)
+        token.connections.one.overrides.close_tab = false
+        assert.deepEqual((await close()).body.result, initial)
+        assert.equal(state.closeTab, false)
+        // This option must never grant access to the close tool itself.
+        token.groups.group.access = false
+        token.connections.one.overrides.close_tab = true
+        assert.equal((await close()).body.result.isError, true)
+    } finally { await server.stop() }
+})
 
 test('official SDK clients can initialize, list and call tools over Streamable HTTP', async () => {
     const { server } = setup()

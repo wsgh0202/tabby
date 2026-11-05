@@ -27,7 +27,7 @@ profile-icon { display: inline-block; width: 1rem; flex: 0 0 1rem; }
 .policy-toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .75rem; padding: .75rem 1rem; border-bottom: 1px solid var(--theme-bg-more-2); }
 .toolbar-actions { display: flex; gap: .5rem; }
 .policy-scroll { overflow: auto; min-height: 0; flex: 1; overscroll-behavior: contain; }
-.policy-table { width: 100%; min-width: 45rem; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
+.policy-table { width: 100%; min-width: 50.5rem; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
 col.name-column { width: 15rem; }
 col.capability-column { width: 5.5rem; }
 col.row-actions { width: 2.5rem; }
