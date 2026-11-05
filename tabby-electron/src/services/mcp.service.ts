@@ -3,6 +3,7 @@ import { Inject, Injectable } from '@angular/core'
 import { BOOTSTRAP_DATA, BootstrapData, ConfigService, ProfilesService, VaultService } from 'tabby-core'
 import { MCPCatalog, MCPPermissions, validateMCPPermissions } from '../mcp/access'
 import { MCPHTTPServer } from '../mcp/server'
+import { DEFAULT_MCP_HOST, MCP_INVALID_HOST_MESSAGE, normalizeMCPHost } from '../mcp/listenAddress'
 import { MCPToken, MCPTokens } from '../mcp/tokens'
 import { isMCPTokenMetadata } from '../mcp/tokenDisplay'
 import { ElectronService } from './electron.service'
@@ -10,6 +11,7 @@ import { MCPConnectionsService } from './mcpConnections.service'
 
 export interface MCPSettings {
     enabled: boolean
+    host: string
     port: number|null
     lastRandomPort: number|null
     tokens: MCPToken[]
@@ -22,6 +24,7 @@ export class MCPService {
     private tokens: MCPTokens
     private pending = Promise.resolve()
     private tokenUpdates = Promise.resolve()
+    private tokenDisposals = new Map<string, Promise<void>>()
     private appliedSettings: string|null = null
     private closing = false
 
@@ -81,15 +84,26 @@ export class MCPService {
                 return
             }
             const { enabled, port, lastRandomPort } = this.settings
-            const signature = JSON.stringify({ enabled, port })
+            const configuredHost = (this.settings as Partial<MCPSettings>).host ?? DEFAULT_MCP_HOST
+            // Validate only while starting, so an invalid saved address cannot
+            // prevent the user from stopping the listener.
+            const host = enabled ? normalizeMCPHost(configuredHost) : configuredHost
+            const signature = JSON.stringify({ enabled, host, port })
             if (this.appliedSettings === signature) {
+                // A settings broadcast may have disabled a token in another
+                // window. This listener owns its sessions and must close them.
+                const records = this.settings.tokens
+                if (Array.isArray(records)) {
+                    await Promise.all(records.filter(token => isMCPTokenMetadata(token) && token.enabled === false)
+                        .map(token => this.disposeTokenOperations(token.id)))
+                }
                 return
             }
             this.error = null
             await this.server.stop()
             if (!this.canListen()) { return }
             if (enabled) {
-                const actualPort = await this.server.start(port, lastRandomPort)
+                const actualPort = await this.server.start(port, lastRandomPort, host)
                 if (!this.canListen()) { await this.server.stop(); return }
                 if (port === null && actualPort !== lastRandomPort) {
                     this.settings.lastRandomPort = actualPort
@@ -100,7 +114,13 @@ export class MCPService {
         }).catch(async error => {
             await this.server.stop()
             this.appliedSettings = null
-            this.error = error.code === 'EADDRINUSE' ? _('MCP port is already in use') : _('Could not start MCP server')
+            if (error.message === MCP_INVALID_HOST_MESSAGE) {
+                this.error = _('MCP listen IP must be a valid IPv4 or IPv6 address')
+            } else if (error.code === 'EADDRINUSE') {
+                this.error = _('MCP port is already in use')
+            } else {
+                this.error = _('Could not start MCP server')
+            }
         })
         return this.pending
     }
@@ -160,7 +180,7 @@ export class MCPService {
                 this.settings.tokens = previous
                 throw error
             }
-            await this.connections.disposeToken(id)
+            await this.disposeTokenOperations(id)
         })
     }
 
@@ -169,10 +189,40 @@ export class MCPService {
             this.getTokenRecords()
             // Remove the credential first: a failed config write must never restore access.
             await this.tokens.remove(id)
-            await this.connections.disposeToken(id)
+            await this.disposeTokenOperations(id)
             this.settings.tokens = this.getTokenRecords().filter(token => !isMCPTokenMetadata(token) || token.id !== id)
             await this.config.save()
         })
+    }
+
+    async setTokenEnabled (id: string, enabled: boolean): Promise<void> {
+        return this.mutateTokens(async () => {
+            if (typeof enabled !== 'boolean') { throw new Error(_('Invalid MCP token state')) }
+            const previous = this.getTokenRecords()
+            if (!previous.some(token => isMCPTokenMetadata(token) && token.id === id)) {
+                throw new Error(_('MCP token no longer exists'))
+            }
+            this.settings.tokens = previous.map(token => isMCPTokenMetadata(token) && token.id === id ? { ...token, enabled } : token)
+            try {
+                await this.config.save()
+            } catch (error) {
+                this.settings.tokens = previous
+                throw error
+            }
+            if (!enabled) { await this.disposeTokenOperations(id) }
+        })
+    }
+
+    private disposeTokenOperations (id: string): Promise<void> {
+        const current = this.tokenDisposals.get(id)
+        if (current) { return current }
+        // Cache before calling into session teardown, which can re-enter from
+        // configuration broadcasts or the local state-change transaction.
+        const disposal = Promise.resolve().then(() => this.connections.disposeToken(id)).finally(() => {
+            if (this.tokenDisposals.get(id) === disposal) { this.tokenDisposals.delete(id) }
+        })
+        this.tokenDisposals.set(id, disposal)
+        return disposal
     }
 
     private getTokenRecords (): MCPToken[] {

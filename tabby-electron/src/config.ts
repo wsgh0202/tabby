@@ -1,4 +1,5 @@
 import { ConfigProvider, Platform } from 'tabby-core'
+import { DEFAULT_MCP_HOST } from './mcp/listenAddress'
 
 /** @hidden */
 export class ElectronConfigProvider extends ConfigProvider {
@@ -26,6 +27,7 @@ export class ElectronConfigProvider extends ConfigProvider {
     defaults = {
         mcp: {
             enabled: false,
+            host: DEFAULT_MCP_HOST,
             port: null,
             lastRandomPort: null,
             tokens: [],

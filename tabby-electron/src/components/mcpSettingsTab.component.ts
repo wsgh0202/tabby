@@ -1,12 +1,14 @@
 import { marker as _ } from '@biesbjerg/ngx-translate-extract-marker'
-import { Component, HostBinding, OnDestroy } from '@angular/core'
+import { ChangeDetectorRef, Component, HostBinding, OnDestroy } from '@angular/core'
+import { NgModel } from '@angular/forms'
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap'
 import { ConfigService, PlatformService, VaultService } from 'tabby-core'
 import { readMCPPermissions } from '../mcp/access'
 import { MCP_GLOBAL_CAPABILITIES } from '../mcp/capabilityLabels'
+import { DEFAULT_MCP_HOST, formatMCPAddress, normalizeMCPHost } from '../mcp/listenAddress'
 import { MCPToken } from '../mcp/tokens'
 import { MCPService } from '../services/mcp.service'
-import { getMCPTokenLabel, isMCPTokenMetadata } from '../mcp/tokenDisplay'
+import { getMCPTokenLabel, isMCPTokenEnabled, isMCPTokenMetadata } from '../mcp/tokenDisplay'
 import { MCPTokenModalComponent } from './mcpTokenModal.component'
 
 interface MCPTokenRow {
@@ -26,6 +28,9 @@ export class MCPSettingsTabComponent implements OnDestroy {
     @HostBinding('class.content-box') contentBox = true
     toolCount = MCP_GLOBAL_CAPABILITIES.length
     tokenLabel = getMCPTokenLabel
+    tokenEnabled = isMCPTokenEnabled
+    tokenEnabledLabel = _('Enable token: {name}')
+    host: string
     port: number|null
     editorOpen = false
     createdToken: string|null = null
@@ -33,6 +38,7 @@ export class MCPSettingsTabComponent implements OnDestroy {
     busy = false
     private editorModal: NgbModalRef|null = null
     private destroyed = false
+    private restoringToggle = false
     private tokenRowsCache = new WeakMap<MCPToken, MCPTokenRow>()
 
     constructor (
@@ -41,7 +47,9 @@ export class MCPSettingsTabComponent implements OnDestroy {
         private config: ConfigService,
         private platform: PlatformService,
         private ngbModal: NgbModal,
+        private changeDetector: ChangeDetectorRef,
     ) {
+        this.host = mcp.settings.host
         this.port = mcp.settings.port
     }
 
@@ -53,7 +61,23 @@ export class MCPSettingsTabComponent implements OnDestroy {
 
     get previewAddress (): string {
         const port = this.port ?? this.mcp.settings.lastRandomPort
-        return port ? `http://127.0.0.1:${port}/mcp` : 'http://127.0.0.1:<automatic>/mcp'
+        let host = DEFAULT_MCP_HOST
+        try {
+            host = normalizeMCPHost(this.host)
+        } catch {
+            // Invalid drafts must not interrupt settings rendering.
+            try { host = normalizeMCPHost(this.mcp.settings.host) } catch { }
+        }
+        return formatMCPAddress(host, port ?? '<automatic>')
+    }
+
+    get wildcardHost (): boolean {
+        try {
+            const host = normalizeMCPHost(this.mcp.address ? this.mcp.settings.host : this.host)
+            return host === '0.0.0.0' || host === '::'
+        } catch {
+            return false
+        }
     }
 
     get tokenRows (): MCPTokenRow[] {
@@ -85,14 +109,24 @@ export class MCPSettingsTabComponent implements OnDestroy {
         return row.token.id
     }
 
-    async saveSettings (enabled = this.mcp.settings.enabled): Promise<void> {
+    async saveSettings (enabled?: boolean): Promise<void> {
         await this.run(async () => {
+            const stopping = enabled === false
+            let host: string|null = null
+            try {
+                host = normalizeMCPHost(this.host)
+            } catch {
+                if (!stopping) {
+                    throw new Error(_('MCP listen IP must be a valid IPv4 or IPv6 address'))
+                }
+            }
             const validPort = this.port === null || (Number.isInteger(this.port) && this.port >= 1 && this.port <= 65535)
-            if (enabled && !validPort) {
+            if (!stopping && !validPort) {
                 throw new Error(_('MCP port must be between 1 and 65535'))
             }
-            const previous = { enabled: this.mcp.settings.enabled, port: this.mcp.settings.port }
-            this.mcp.settings.enabled = enabled
+            const previous = { enabled: this.mcp.settings.enabled, host: this.mcp.settings.host, port: this.mcp.settings.port }
+            this.mcp.settings.enabled = enabled ?? previous.enabled
+            if (host !== null) { this.mcp.settings.host = host }
             if (validPort) { this.mcp.settings.port = this.port }
             try {
                 await this.config.save()
@@ -100,8 +134,34 @@ export class MCPSettingsTabComponent implements OnDestroy {
                 Object.assign(this.mcp.settings, previous)
                 throw error
             }
+            if (host !== null) { this.host = host }
             await this.mcp.refresh()
         })
+    }
+
+    async setEnabled (enabled: boolean, control: NgModel): Promise<void> {
+        if (this.restoringToggle) { return }
+        await this.saveSettings(enabled)
+        if (this.destroyed || enabled === this.mcp.settings.enabled) { return }
+        this.restoreToggle(control, this.mcp.settings.enabled)
+    }
+
+    async setTokenEnabled (token: MCPToken, enabled: boolean, control: NgModel): Promise<void> {
+        if (this.restoringToggle || this.busy || this.editorOpen || this.createdToken) { return }
+        await this.run(() => this.mcp.setTokenEnabled(token.id, enabled))
+        if (this.destroyed) { return }
+        const current = this.tokenRows.find(row => row.token.id === token.id)?.token
+        if (current && enabled !== this.tokenEnabled(current)) {
+            this.restoreToggle(control, this.tokenEnabled(current))
+        }
+    }
+
+    private restoreToggle (control: NgModel, enabled: boolean): void {
+        // Commit the toggle's edited view before resetting a rejected change.
+        // Reset also emits ngModelChange; ignore that notification, not the error.
+        this.changeDetector.detectChanges()
+        this.restoringToggle = true
+        try { control.reset(enabled) } finally { this.restoringToggle = false }
     }
 
     async openEditor (token?: MCPToken): Promise<void> {
