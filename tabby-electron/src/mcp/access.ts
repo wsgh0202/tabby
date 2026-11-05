@@ -27,7 +27,7 @@ export interface MCPCatalog {
 // Named permission types keep the model extensible without spreading string literals.
 // eslint-disable-next-line @typescript-eslint/no-type-alias
 export type MCPGlobalCapability = 'connection_operations'
-export type MCPConnectionCapability = 'view_config'|'edit_config'|'access'|'upload'|'download'
+export type MCPConnectionCapability = 'view_config'|'edit_config'|'access'|'close_tab'|'upload'|'download'
 // eslint-disable-next-line @typescript-eslint/no-type-alias
 export type MCPOverrides = Partial<Record<MCPConnectionCapability, boolean>>
 
@@ -43,7 +43,7 @@ export interface MCPPermissions {
     connections: Record<string, MCPConnectionGrant>
 }
 
-const CONNECTION_CAPABILITIES: MCPConnectionCapability[] = ['view_config', 'edit_config', 'access', 'upload', 'download']
+const CONNECTION_CAPABILITIES: MCPConnectionCapability[] = ['view_config', 'edit_config', 'access', 'close_tab', 'upload', 'download']
 const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
 
 export function newMCPPermissions (): MCPPermissions {

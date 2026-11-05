@@ -45,6 +45,7 @@ export class MCPConnectionsService {
         args: Record<string, unknown>,
         authorize: () => Promise<boolean>,
         origin?: MCPRequestOrigin,
+        closeTab = false,
     ): Promise<unknown> {
         await this.check(authorize)
         if (name === 'read_connection') {
@@ -54,7 +55,7 @@ export class MCPConnectionsService {
             return this.runtime.write(tokenId, connection.id, args.sessionId as string, args.input as string)
         }
         if (name === 'close_connection') {
-            return this.runtime.close(tokenId, connection.id, args.sessionId as string)
+            return this.runtime.close(tokenId, connection.id, args.sessionId as string, closeTab)
         }
         if (name === 'open_connection') {
             return this.runtime.open(tokenId, connection.id, callbacks => this.openTerminal(tokenId, connection.id, args, callbacks, origin), authorize)
@@ -163,20 +164,29 @@ export class MCPConnectionsService {
         const session: MCPOwnedSession = {
             get open () { return !state.closed && !!tab.session?.open },
             write: input => tab.sendInput(input),
-            close: async () => {
+            close: async (removeTab = true) => {
                 if (state.disposed) { return }
                 state.disposed = true
                 state.closed = true
                 subscriptions.forEach(subscription => subscription.unsubscribe())
+                const terminalSession = tab.session
+                if (!removeTab) {
+                    // Detach lifecycle handlers before disconnecting: providers may
+                    // otherwise close the tab or reconnect from session events.
+                    tab.setSession(null)
+                    tab.frontend?.resetTerminalModes()
+                }
                 // Explicitly closing the own session cannot offer reconnect or
                 // accidentally close a user tab through the closed-tabs stack.
                 try {
-                    await tab.session?.destroy()
+                    await terminalSession?.destroy()
                 } finally {
                     // A provider can reject destruction after its native session
-                    // has failed. Still close owned transports and remove the tab.
+                    // has failed. Still close owned transports and apply the policy.
                     await this.disposeTransfer(sshScope)
-                    try { await tab.destroy() } catch { BaseTabComponent.prototype.destroy.call(tab) }
+                    if (removeTab) {
+                        try { await tab.destroy() } catch { BaseTabComponent.prototype.destroy.call(tab) }
+                    }
                 }
             },
         }

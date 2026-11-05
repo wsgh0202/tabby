@@ -9,7 +9,7 @@ export const MCP_SESSION_IDLE_TIMEOUT = 5 * 60 * 1000
 export interface MCPOwnedSession {
     readonly open: boolean
     write: (input: string) => void
-    close: () => Promise<void>
+    close: (closeTab?: boolean) => Promise<void>
 }
 
 export interface MCPSessionCallbacks {
@@ -124,9 +124,9 @@ export class MCPRuntime {
         return { written: Buffer.byteLength(input) }
     }
 
-    async close (tokenId: string, connectionId: string, sessionId: string): Promise<unknown> {
+    async close (tokenId: string, connectionId: string, sessionId: string, closeTab = true): Promise<unknown> {
         const entry = await this.get(tokenId, connectionId, sessionId)
-        await this.remove(sessionId, entry)
+        await this.remove(sessionId, entry, closeTab)
         return { closed: true }
     }
 
@@ -173,12 +173,12 @@ export class MCPRuntime {
         entry.output = next.subarray(drop)
     }
 
-    private async remove (sessionId: string, entry: SessionEntry): Promise<void> {
+    private async remove (sessionId: string, entry: SessionEntry, closeTab = true): Promise<void> {
         entry.active = false
         this.sessions.delete(sessionId)
         const session = entry.session
         entry.session = undefined
-        await session?.close().catch(() => undefined)
+        await session?.close(closeTab).catch(() => undefined)
     }
 }
 

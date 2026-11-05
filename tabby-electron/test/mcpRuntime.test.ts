@@ -188,6 +188,7 @@ function adapterFixture (profile: any, ready = true, Service = MCPConnectionsSer
                 ...params.inputs,
                 profile: params.inputs.profile, session, binaryOutput$: output, sessionChanged$: new Subject(), destroyed$: destroyed,
                 sendInput: () => undefined,
+                setSession: value => { tab.session = value },
                 destroy: async () => { destroyed.next(); destroyed.complete(); output.complete(); await session.destroy() },
             }
             opened.push(tab)
@@ -213,6 +214,44 @@ test('terminal adapter creates an independent profile and disposes only its own 
     assert.deepEqual(fixture.saved(), profile)
     await fixture.adapter.disposeAll()
     assert.equal(fixture.opened[0].session.open, false)
+})
+
+for (const closeTab of [false, true]) {
+    test(`explicit close ${closeTab ? 'removes' : 'preserves'} the terminal tab and releases the session`, async () => {
+        const profile = { id: 'local', type: 'local', name: 'Shell', options: {} }
+        const fixture = adapterFixture(profile)
+        const opened: any = await fixture.adapter.callOperation('token', profile, 'open_connection', {}, async () => true)
+        const tab = fixture.opened[0]
+        const session = tab.session
+        let removed = false
+        tab.destroyed$.subscribe(() => { removed = true })
+        const result = await fixture.adapter.callOperation('token', profile, 'close_connection', { sessionId: opened.sessionId }, async () => true, undefined, closeTab)
+        assert.deepEqual(result, { closed: true })
+        assert.equal(session.open, false)
+        assert.equal(removed, closeTab)
+        if (!closeTab) { assert.equal(tab.session, null) }
+        await assert.rejects(fixture.adapter.callOperation('token', profile, 'write_connection', { sessionId: opened.sessionId, input: 'echo forbidden' }, async () => true), /not found/)
+        await fixture.adapter.disposeAll()
+        assert.equal(removed, closeTab, 'later cleanup must not remove a retained tab')
+    })
+}
+
+test('default explicit close detaches lifecycle handlers before a provider emits close events', async () => {
+    const profile = { id: 'local', type: 'local', name: 'Shell', options: {} }
+    const fixture = adapterFixture(profile)
+    const opened: any = await fixture.adapter.callOperation('token', profile, 'open_connection', {}, async () => true)
+    const tab = fixture.opened[0]
+    const session = tab.session
+    let removed = false
+    tab.destroyed$.subscribe(() => { removed = true })
+    session.destroy = async () => {
+        assert.equal(tab.session, null, 'session lifecycle handlers are detached before destruction')
+        session.open = false
+        if (tab.session) { await tab.destroy() }
+    }
+    await fixture.adapter.callOperation('token', profile, 'close_connection', { sessionId: opened.sessionId }, async () => true)
+    assert.equal(removed, false)
+    assert.equal(session.open, false)
 })
 
 test('a pending PTY that finishes opening after cancellation is immediately destroyed', async () => {
