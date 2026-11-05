@@ -23,6 +23,10 @@ test('MCP settings and modal have English and Chinese translations with matching
         extractor.createJsParser([JsExtractors.callExpression('_', { arguments: { text: 0 } })])
             .parseString(readFileSync(source, 'utf8'), source)
     }
+    const badgeFile = fileURLToPath(new URL('../../tabby-core/src/components/mcpTabBadge.component.pug', import.meta.url))
+    extractor.createHtmlParser([
+        HtmlExtractors.elementContent('translate, [translate=""]'),
+    ]).parseString(pug.renderFile(badgeFile, { doctype: 'html' }), badgeFile)
     const serviceSource = fileURLToPath(new URL('../src/services/mcp.service.ts', import.meta.url))
     extractor.createJsParser([JsExtractors.callExpression('_', { arguments: { text: 0 } })])
         .parseString(readFileSync(serviceSource, 'utf8'), serviceSource)

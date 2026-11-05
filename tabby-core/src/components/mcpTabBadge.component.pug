@@ -1,0 +1,42 @@
+button.mcp-badge(
+    type='button',
+    [ngbPopover]='details',
+    triggers='manual',
+    autoClose='outside',
+    placement='auto',
+    container='body',
+    popoverClass='mcp-tab-origin-popover',
+    [attr.aria-label]='"MCP terminal origin" | translate',
+    [attr.aria-pressed]='pinned',
+    (mouseenter)='open()',
+    (mouseleave)='leave()',
+    (focus)='focused = true; open()',
+    (blur)='focused = false; leave()',
+    (click)='$event.stopPropagation(); togglePinned()',
+    (mousedown)='$event.stopPropagation()',
+    (mouseup)='$event.stopPropagation()',
+    (dblclick)='$event.stopPropagation()',
+    (hidden)='hidden()'
+)
+    i.fas.fa-plug(aria-hidden='true')
+    span MCP
+ng-template(#details)
+    .mcp-origin-details(
+        tabindex='0',
+        (mouseenter)='insideDetails = true; cancelClose()',
+        (mouseleave)='insideDetails = false; leave()',
+        (focusin)='focused = true; cancelClose()',
+        (focusout)='focused = false; leave()',
+        (keydown)='$event.key !== "Escape" && $event.stopPropagation()',
+        (keyup)='$event.stopPropagation()'
+    )
+        .mcp-origin-heading(translate) Terminal opened via MCP
+        dl(*ngFor='let origin of origins')
+            dt(translate) Token name
+            dd {{origin.tokenName || ('Unnamed token' | translate)}}
+            dt(translate) Source
+            dd.mcp-origin-mono {{origin.source || ('Unknown' | translate)}}
+            dt(translate) Associated connection
+            dd {{origin.connectionName}} · {{origin.connectionType}}
+            dt(translate) Session ID
+            dd.mcp-origin-mono {{origin.sessionId}}

@@ -497,3 +497,24 @@ msgstr "Agent side"
 
 msgid "Connection side"
 msgstr "Connection side"
+
+msgid "MCP terminal origin"
+msgstr "MCP terminal origin"
+
+msgid "Terminal opened via MCP"
+msgstr "Terminal opened via MCP"
+
+msgid "Source"
+msgstr "Source"
+
+msgid "Associated connection"
+msgstr "Associated connection"
+
+msgid "Session ID"
+msgstr "Session ID"
+
+msgid "Unnamed token"
+msgstr "Unnamed token"
+
+msgid "Unknown"
+msgstr "Unknown"
