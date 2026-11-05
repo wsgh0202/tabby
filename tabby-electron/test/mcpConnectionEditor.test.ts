@@ -35,6 +35,20 @@ function setup () {
     return new MCPConnectionEditor(permissions, catalog)
 }
 
+test('close-tab policy defaults off and supports inherited overrides and reset', () => {
+    const editor = setup()
+    const connection = editor.rows.find(row => row.id === 'three')!
+    assert.equal(editor.effective(connection, 'close_tab'), false)
+    editor.permissions.groups.root.close_tab = true
+    assert.equal(editor.effective(connection, 'close_tab'), true)
+    editor.permissions.connections.three.overrides.close_tab = false
+    assert.equal(editor.effective(connection, 'close_tab'), false)
+    editor.resetConnection('three')
+    assert.equal(editor.effective(connection, 'close_tab'), true)
+    editor.applyBatch(['three'], ['access', 'close_tab'])
+    assert.equal(editor.permissions.connections.three.overrides.close_tab, true)
+})
+
 test('scope counts include descendants and stay independent from capabilities', () => {
     const editor = setup()
     assert.equal(editor.connectionsInGroup('root').length, 3)
@@ -148,13 +162,13 @@ test('scope reset affects only included connection overrides and row reset can c
     assert.equal(JSON.stringify(editor.permissions.groups), templates)
 })
 
-test('batch writes all five explicit values to its target snapshot without changing templates or inclusion', () => {
+test('batch writes all explicit values to its target snapshot without changing templates or inclusion', () => {
     const editor = setup()
     const targets = editor.includedConnections().map(connection => connection.id)
     const templates = JSON.stringify(editor.permissions.groups)
     editor.permissions.connections.two.included = true
     editor.applyBatch(targets, ['access', 'download'])
-    assert.deepEqual(editor.permissions.connections.one.overrides, { view_config: false, edit_config: false, access: true, upload: false, download: true })
+    assert.deepEqual(editor.permissions.connections.one.overrides, { view_config: false, edit_config: false, access: true, close_tab: false, upload: false, download: true })
     assert.deepEqual(editor.permissions.connections.three.overrides, editor.permissions.connections.one.overrides)
     assert.deepEqual(editor.permissions.connections.two.overrides, { access: false }, 'a connection included after opening is outside the snapshot')
     assert.deepEqual(editor.permissions.connections.four.overrides, { access: true })

@@ -518,3 +518,9 @@ msgstr "Unnamed token"
 
 msgid "Unknown"
 msgstr "Unknown"
+
+msgid "Close tab"
+msgstr "Close tab"
+
+msgid "When the agent calls the close tool, also close its terminal tab. When disabled, disconnect and keep the tab for reviewing commands and output."
+msgstr "When the agent calls the close tool, also close its terminal tab. When disabled, disconnect and keep the tab for reviewing commands and output."
