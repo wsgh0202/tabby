@@ -83,6 +83,13 @@
 
 .token-actions { flex-wrap: wrap; }
 
+.connection-count {
+    padding: 0;
+    border: 0;
+    font: inherit;
+    text-decoration: underline;
+}
+
 .token-disabled .token-details { opacity: .6; }
 
 .token-state {
