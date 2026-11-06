@@ -20,6 +20,9 @@
     line-height: 1.5;
     white-space: nowrap;
     cursor: help;
+
+    .session-open { color: #28a745; }
+    .session-closed { color: #dc3545; }
 }
 
 // Body mounting escapes tab-header's clipping and draggable title-bar region.

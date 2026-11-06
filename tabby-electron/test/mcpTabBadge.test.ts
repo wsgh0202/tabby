@@ -3,6 +3,20 @@ import { test } from 'node:test'
 import '@angular/compiler'
 import { MCPTabBadgeComponent } from '../../tabby-core/src/components/mcpTabBadge.component'
 
+test('split tab badge stays open while any MCP session is open and follows live state', () => {
+    const badge = new MCPTabBadgeComponent()
+    const origin = { tokenName: 'Agent', source: '', connectionName: 'Shell', connectionType: 'local', sessionId: 'one', sessionOpen: true }
+    const other = { ...origin, sessionId: 'two', sessionOpen: false }
+    badge.origins = [origin, other]
+    assert.equal(badge.sessionOpen, true)
+    origin.sessionOpen = false
+    assert.equal(badge.sessionOpen, false)
+    other.sessionOpen = true
+    assert.equal(badge.sessionOpen, true)
+    badge.origins = []
+    assert.equal(badge.sessionOpen, false)
+})
+
 test('MCP origin popover bridges the hover gap and stays open while selecting inside', context => {
     const pending = new Map<number, () => void>()
     let timerId = 0

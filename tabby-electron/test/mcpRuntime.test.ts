@@ -187,6 +187,9 @@ function adapterFixture (profile: any, ready = true, Service = MCPConnectionsSer
             const tab = {
                 ...params.inputs,
                 profile: params.inputs.profile, session, binaryOutput$: output, sessionChanged$: new Subject(), destroyed$: destroyed,
+                frontend: { resetTerminalModes: () => undefined },
+                written: [] as string[],
+                write: async data => { tab.written.push(data) },
                 sendInput: () => undefined,
                 setSession: value => { tab.session = value },
                 destroy: async () => { destroyed.next(); destroyed.complete(); output.complete(); await session.destroy() },
@@ -207,6 +210,7 @@ test('terminal adapter creates an independent profile and disposes only its own 
     assert.equal(fixture.opened.length, 1)
     assert.deepEqual(fixture.opened[0].mcpOrigin, {
         tokenName: 'Development agent', source: '192.0.2.10', connectionName: 'Shell', connectionType: 'local', sessionId: result.sessionId,
+        sessionOpen: true,
     })
     assert.equal(fixture.opened[0].profile.options.restoreFromPTYID, null)
     assert.equal(fixture.opened[0].profile.options.reuseSession, false)
@@ -214,6 +218,22 @@ test('terminal adapter creates an independent profile and disposes only its own 
     assert.deepEqual(fixture.saved(), profile)
     await fixture.adapter.disposeAll()
     assert.equal(fixture.opened[0].session.open, false)
+    assert.equal(fixture.opened[0].mcpOrigin.sessionOpen, false)
+})
+
+test('MCP tab origin follows transport disconnect and reconnect without replacing its metadata', async () => {
+    const profile = { id: 'local', type: 'local', name: 'Shell', options: {} }
+    const fixture = adapterFixture(profile)
+    await fixture.adapter.callOperation('token', profile, 'open_connection', {}, async () => true)
+    const tab = fixture.opened[0]
+    const origin = tab.mcpOrigin
+    tab.session.open = false
+    assert.equal(origin.sessionOpen, false)
+    tab.session.open = true
+    assert.equal(origin.sessionOpen, true)
+    tab.destroyed$.next()
+    assert.equal(origin.sessionOpen, false, 'a destroyed tab stays closed even if transport teardown is pending')
+    await fixture.adapter.disposeAll()
 })
 
 for (const closeTab of [false, true]) {
@@ -223,11 +243,14 @@ for (const closeTab of [false, true]) {
         const opened: any = await fixture.adapter.callOperation('token', profile, 'open_connection', {}, async () => true)
         const tab = fixture.opened[0]
         const session = tab.session
+        assert.equal(tab.mcpOrigin.sessionOpen, true)
         let removed = false
         tab.destroyed$.subscribe(() => { removed = true })
         const result = await fixture.adapter.callOperation('token', profile, 'close_connection', { sessionId: opened.sessionId }, async () => true, undefined, closeTab)
         assert.deepEqual(result, { closed: true })
         assert.equal(session.open, false)
+        assert.equal(tab.mcpOrigin.sessionOpen, false)
+        assert.deepEqual(tab.written, closeTab ? [] : ['\r\nsession closed\r\n'])
         assert.equal(removed, closeTab)
         if (!closeTab) { assert.equal(tab.session, null) }
         await assert.rejects(fixture.adapter.callOperation('token', profile, 'write_connection', { sessionId: opened.sessionId, input: 'echo forbidden' }, async () => true), /not found/)

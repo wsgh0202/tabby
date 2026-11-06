@@ -113,6 +113,7 @@ export class ReconnectContextMenu extends TabContextMenuItemProvider {
                 },
                 {
                     label: this.translate.instant('Reconnect'),
+                    enabled: tab.canReconnect,
                     click: (): void => {
                         setTimeout(() => {
                             tab.reconnect()

@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import '@angular/compiler'
+import { Subject } from 'rxjs'
 import { MCPSettingsTabComponent } from '../src/components/mcpSettingsTab.component'
 import { MCPTokenModalComponent } from '../src/components/mcpTokenModal.component'
+import { MCPConnectionsModalComponent } from '../src/components/mcpConnectionsModal.component'
 import { newMCPPermissions } from '../src/mcp/access'
 
 function setup () {
@@ -23,12 +25,15 @@ function setup () {
     let editor: MCPTokenModalComponent
     const modals: any[] = []
     const ngbModal = {
-        open: (_type, options) => {
+        open: (type, options) => {
             let resolveResult, rejectResult
             const result = new Promise((resolve, reject) => { resolveResult = resolve; rejectResult = reject })
-            const modal = { close: value => resolveResult(value), dismiss: () => { if (options.beforeDismiss()) { rejectResult() } } }
-            editor = new MCPTokenModalComponent(mcp as any, modal as any, ngbModal as any)
-            const ref = { componentInstance: editor, result, close: modal.close }
+            const modal = { close: value => resolveResult(value), dismiss: () => { if (!options.beforeDismiss || options.beforeDismiss()) { rejectResult() } } }
+            const instance = type === MCPTokenModalComponent
+                ? new MCPTokenModalComponent(mcp as any, modal as any, ngbModal as any)
+                : new MCPConnectionsModalComponent(modal as any, ngbModal as any)
+            if (instance instanceof MCPTokenModalComponent) { editor = instance }
+            const ref = { componentInstance: instance, result, close: modal.close, shown: new Subject<void>() }
             modals.push(ref)
             return ref
         },
@@ -253,6 +258,48 @@ test('editing clones permissions and supports removing independent selections', 
     assert.equal(calls[0].id, 'id')
     assert.deepEqual(calls[0].permissions.groups.group, { access: false })
     assert.equal(calls[0].name, 'Renamed')
+})
+
+test('connection shortcut opens the normal nested draft and returns through the token editor', async () => {
+    const state = setup()
+    const token = { ...newMCPPermissions(), id: 'shortcut', name: 'Agent' }
+    token.capabilities = ['connection_operations']
+    token.connections.one = { included: true, overrides: { access: true } }
+    const original = JSON.stringify(token)
+    await state.component.openEditor(token, true)
+    const editor = state.editor
+    editor.ngOnInit()
+    assert.equal(state.modals.length, 1, 'wait for the token editor to be visible and initialized')
+    state.modals[0].shown.next()
+    const connections = state.modals[1].componentInstance as MCPConnectionsModalComponent
+    connections.ngOnInit()
+    assert.equal(connections.tokenName, 'Agent')
+    assert.equal(connections.catalog, editor.catalog)
+    assert.deepEqual(connections.permissions, editor.permissions)
+    connections.editor.permissions.connections.one.included = false
+    state.modals[1].close(connections.editor.permissions)
+    await new Promise(resolve => setImmediate(resolve))
+    assert.equal(editor.connectionsOpen, false)
+    assert.equal(state.component.editorOpen, true, 'closing connections keeps the token editor open')
+    assert.equal(editor.dirty, true)
+    assert.deepEqual(state.calls, [], 'connection changes are only a token draft')
+    editor.cancel()
+    assert.equal(editor.discardPrompt, true)
+    editor.discard()
+    await new Promise(resolve => setImmediate(resolve))
+    assert.equal(state.component.editorOpen, false)
+    assert.equal(JSON.stringify(token), original)
+    assert.deepEqual(state.calls, [])
+})
+
+test('a shortcut cannot open connections after the token editor has closed', async () => {
+    const state = setup()
+    await state.component.openEditor({ ...newMCPPermissions(), id: 'closed', name: '' }, true)
+    state.editor.ngOnInit()
+    state.editor.cancel()
+    await new Promise(resolve => setImmediate(resolve))
+    state.modals[0].shown.next()
+    assert.equal(state.modals.length, 1)
 })
 
 test('token summaries reject unsupported policies without changing their persisted grants', () => {
