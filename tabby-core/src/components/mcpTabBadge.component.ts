@@ -10,6 +10,7 @@ import { MCPTabOrigin } from './baseTab.component'
 })
 export class MCPTabBadgeComponent implements OnDestroy {
     @Input() origins: MCPTabOrigin[] = []
+    @Input() activeOrigin: MCPTabOrigin|null = null
     @ViewChild(NgbPopover) popover?: NgbPopover
     pinned = false
     focused = false
@@ -17,7 +18,7 @@ export class MCPTabBadgeComponent implements OnDestroy {
     private closeTimer: ReturnType<typeof setTimeout>|null = null
 
     get sessionOpen (): boolean {
-        return this.origins.some(origin => origin.sessionOpen)
+        return this.activeOrigin?.sessionOpen ?? false
     }
 
     open (): void {

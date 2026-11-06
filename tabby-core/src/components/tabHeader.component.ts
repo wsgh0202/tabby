@@ -2,7 +2,7 @@
 import { Component, Input, Optional, Inject, HostBinding, HostListener, NgZone } from '@angular/core'
 import { auditTime } from 'rxjs'
 import { TabContextMenuItemProvider } from '../api/tabContextMenuProvider'
-import { BaseTabComponent } from './baseTab.component'
+import { BaseTabComponent, MCPTabOrigin } from './baseTab.component'
 import { SplitTabComponent } from './splitTab.component'
 import { HotkeysService } from '../services/hotkeys.service'
 import { AppService } from '../services/app.service'
@@ -24,6 +24,13 @@ export class TabHeaderComponent extends BaseComponent {
     @Input() tab: BaseTabComponent
     @Input() progress: number|null
     Platform = Platform
+
+    get activeMCPOrigin (): MCPTabOrigin|null {
+        const tab = this.tab instanceof SplitTabComponent
+            ? this.tab.getFocusedTab()
+            : this.tab
+        return tab?.mcpOrigin ?? null
+    }
 
     constructor (
         public app: AppService,
