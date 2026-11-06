@@ -504,6 +504,15 @@ msgstr "MCP terminal origin"
 msgid "Terminal opened via MCP"
 msgstr "Terminal opened via MCP"
 
+msgid "Session status"
+msgstr "Session status"
+
+msgid "Session open"
+msgstr "Session open"
+
+msgid "Session closed"
+msgstr "Session closed"
+
 msgid "Source"
 msgstr "Source"
 

@@ -3039,6 +3039,15 @@ msgstr "MCP 终端来源"
 msgid "Terminal opened via MCP"
 msgstr "由 MCP 打开的终端"
 
+msgid "Session status"
+msgstr "会话状态"
+
+msgid "Session open"
+msgstr "会话已打开"
+
+msgid "Session closed"
+msgstr "会话已关闭"
+
 msgid "Source"
 msgstr "来源"
 

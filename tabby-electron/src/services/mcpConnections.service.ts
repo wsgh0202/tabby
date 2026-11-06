@@ -135,14 +135,15 @@ export class MCPConnectionsService {
             }
         }
         const baseTab = this.injector.get(AppService).openNewTab(params)
+        const tab = baseTab as BaseTerminalTabComponent<any>
         baseTab.mcpOrigin = {
             tokenName: origin?.tokenName ?? '',
             source: origin?.source ?? '',
             connectionName: profile.name,
             connectionType: profile.type,
             sessionId: callbacks.sessionId,
+            get sessionOpen () { return !state.closed && !!tab.session?.open },
         }
-        const tab = baseTab as BaseTerminalTabComponent<any>
         if (!tab.sessionChanged$ || !tab.binaryOutput$ || typeof tab.sendInput !== 'function') {
             baseTab.destroy()
             await this.disposeTransfer(sshScope)
