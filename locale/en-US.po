@@ -508,10 +508,10 @@ msgid "Session status"
 msgstr "Session status"
 
 msgid "Session open"
-msgstr "Session open"
+msgstr "Open"
 
 msgid "Session closed"
-msgstr "Session closed"
+msgstr "Closed"
 
 msgid "Source"
 msgstr "Source"

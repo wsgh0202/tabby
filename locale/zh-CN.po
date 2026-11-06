@@ -3043,10 +3043,10 @@ msgid "Session status"
 msgstr "会话状态"
 
 msgid "Session open"
-msgstr "会话已打开"
+msgstr "已打开"
 
 msgid "Session closed"
-msgstr "会话已关闭"
+msgstr "已关闭"
 
 msgid "Source"
 msgstr "来源"
