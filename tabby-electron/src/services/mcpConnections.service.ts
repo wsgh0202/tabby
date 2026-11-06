@@ -187,6 +187,10 @@ export class MCPConnectionsService {
                     await this.disposeTransfer(sshScope)
                     if (removeTab) {
                         try { await tab.destroy() } catch { BaseTabComponent.prototype.destroy.call(tab) }
+                    } else if (tab.frontend) {
+                        // Session handlers were detached to preserve this tab;
+                        // keep the usual closure marker in its reviewable output.
+                        await tab.write('\r\nsession closed\r\n')
                     }
                 }
             },

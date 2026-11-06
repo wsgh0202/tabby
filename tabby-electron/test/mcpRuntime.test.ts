@@ -187,6 +187,9 @@ function adapterFixture (profile: any, ready = true, Service = MCPConnectionsSer
             const tab = {
                 ...params.inputs,
                 profile: params.inputs.profile, session, binaryOutput$: output, sessionChanged$: new Subject(), destroyed$: destroyed,
+                frontend: { resetTerminalModes: () => undefined },
+                written: [] as string[],
+                write: async data => { tab.written.push(data) },
                 sendInput: () => undefined,
                 setSession: value => { tab.session = value },
                 destroy: async () => { destroyed.next(); destroyed.complete(); output.complete(); await session.destroy() },
@@ -247,6 +250,7 @@ for (const closeTab of [false, true]) {
         assert.deepEqual(result, { closed: true })
         assert.equal(session.open, false)
         assert.equal(tab.mcpOrigin.sessionOpen, false)
+        assert.deepEqual(tab.written, closeTab ? [] : ['\r\nsession closed\r\n'])
         assert.equal(removed, closeTab)
         if (!closeTab) { assert.equal(tab.session, null) }
         await assert.rejects(fixture.adapter.callOperation('token', profile, 'write_connection', { sessionId: opened.sessionId, input: 'echo forbidden' }, async () => true), /not found/)
