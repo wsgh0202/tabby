@@ -3,17 +3,21 @@ import { test } from 'node:test'
 import '@angular/compiler'
 import { MCPTabBadgeComponent } from '../../tabby-core/src/components/mcpTabBadge.component'
 
-test('split tab badge stays open while any MCP session is open and follows live state', () => {
+test('split tab badge follows the selected MCP session rather than another open pane', () => {
     const badge = new MCPTabBadgeComponent()
     const origin = { tokenName: 'Agent', source: '', connectionName: 'Shell', connectionType: 'local', sessionId: 'one', sessionOpen: true }
     const other = { ...origin, sessionId: 'two', sessionOpen: false }
     badge.origins = [origin, other]
+    badge.activeOrigin = origin
     assert.equal(badge.sessionOpen, true)
     origin.sessionOpen = false
     assert.equal(badge.sessionOpen, false)
+    origin.sessionOpen = true
+    badge.activeOrigin = other
+    assert.equal(badge.sessionOpen, false, 'an open background pane does not make the selected closed pane green')
     other.sessionOpen = true
     assert.equal(badge.sessionOpen, true)
-    badge.origins = []
+    badge.activeOrigin = null
     assert.equal(badge.sessionOpen, false)
 })
 
