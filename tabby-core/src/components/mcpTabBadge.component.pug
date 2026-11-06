@@ -18,7 +18,7 @@ button.mcp-badge(
     (dblclick)='$event.stopPropagation()',
     (hidden)='hidden()'
 )
-    i.fas.fa-plug(aria-hidden='true')
+    i.fas.fa-plug([class.session-open]='sessionOpen', [class.session-closed]='!sessionOpen', aria-hidden='true')
     span MCP
 ng-template(#details)
     .mcp-origin-details(
@@ -40,3 +40,7 @@ ng-template(#details)
             dd {{origin.connectionName}} · {{origin.connectionType}}
             dt(translate) Session ID
             dd.mcp-origin-mono {{origin.sessionId}}
+            dt(translate) Session status
+            dd
+                span(*ngIf='origin.sessionOpen', translate) Session open
+                span(*ngIf='!origin.sessionOpen', translate) Session closed

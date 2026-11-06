@@ -16,13 +16,14 @@ export interface GetRecoveryTokenOptions {
     includeState: boolean
 }
 
-/** Snapshot of the request that opened an MCP-owned terminal. Never persisted. */
+/** Request origin and live state of an MCP-owned terminal. Never persisted. */
 export interface MCPTabOrigin {
     tokenName: string
     source: string
     connectionName: string
     connectionType: string
     sessionId: string
+    readonly sessionOpen: boolean
 }
 
 /**

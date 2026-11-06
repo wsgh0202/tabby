@@ -164,7 +164,7 @@ export class MCPSettingsTabComponent implements OnDestroy {
         try { control.reset(enabled) } finally { this.restoringToggle = false }
     }
 
-    async openEditor (token?: MCPToken): Promise<void> {
+    async openEditor (token?: MCPToken, configureConnections = false): Promise<void> {
         if (this.busy || this.editorOpen || this.createdToken) { return }
         await this.run(async () => {
             const catalog = await this.mcp.getCatalog()
@@ -180,6 +180,15 @@ export class MCPSettingsTabComponent implements OnDestroy {
             editor.catalog = catalog
             this.editorModal = modal
             this.editorOpen = true
+            if (configureConnections) {
+                // Keep the normal token editor underneath, with its initialized
+                // draft and the usual save/discard flow when returning.
+                modal.shown.subscribe(() => {
+                    if (!this.destroyed && this.editorModal === modal) {
+                        void editor.configureConnections()
+                    }
+                })
+            }
             modal.result.then((created: string|null) => {
                 if (!this.destroyed) { this.createdToken = created }
             }).catch(() => null).finally(() => {

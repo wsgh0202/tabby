@@ -28,6 +28,7 @@ export abstract class ConnectableTerminalTabComponent<P extends ConnectableTermi
 
             switch (hotkey) {
                 case 'reconnect-tab':
+                    if (!this.canReconnect) { break }
                     this.reconnect()
                     this.notifications.notice(this.translate.instant('Reconnect'))
                     break
@@ -50,6 +51,10 @@ export abstract class ConnectableTerminalTabComponent<P extends ConnectableTermi
             this.clearServiceMessagesOnConnect()
         })
         super.onFrontendReady()
+    }
+
+    get canReconnect (): boolean {
+        return !this.mcpOrigin
     }
 
     /**
@@ -82,6 +87,7 @@ export abstract class ConnectableTerminalTabComponent<P extends ConnectableTermi
     * Set reconnectOffered to true
     */
     offerReconnection (): void {
+        if (!this.canReconnect) { return }
         if (!this.reconnectOffered) {
             this.reconnectOffered = true
             this.write(this.translate.instant(_('Press any key to reconnect')) + '\r\n')
@@ -117,6 +123,7 @@ export abstract class ConnectableTerminalTabComponent<P extends ConnectableTermi
     }
 
     async reconnect (): Promise<void> {
+        if (!this.canReconnect) { return }
         this.session?.destroy()
         this.frontend?.resetTerminalModes()
         this.profile = this.injector.get(ProfilesService).refreshConfigProxyForProfile(this.profile)

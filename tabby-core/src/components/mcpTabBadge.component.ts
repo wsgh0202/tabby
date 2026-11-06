@@ -16,6 +16,10 @@ export class MCPTabBadgeComponent implements OnDestroy {
     insideDetails = false
     private closeTimer: ReturnType<typeof setTimeout>|null = null
 
+    get sessionOpen (): boolean {
+        return this.origins.some(origin => origin.sessionOpen)
+    }
+
     open (): void {
         this.cancelClose()
         this.popover?.open()

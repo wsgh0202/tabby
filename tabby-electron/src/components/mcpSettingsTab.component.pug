@@ -61,7 +61,7 @@ section
                 code.text-muted(*ngIf='row.token.name && row.token.preview') {{row.token.preview}}
                 .token-summary.text-muted
                     span(translate='Capabilities: {count} / {total}', [translateParams]='{count: row.capabilityCount, total: toolCount}')
-                    span(translate='Included connections: {count}', [translateParams]='{count: row.includedConnectionCount}')
+                    button.btn.btn-link.connection-count(type='button', (click)='openEditor(row.token, true)', [disabled]='busy || editorOpen || !!createdToken', translate='Included connections: {count}', [translateParams]='{count: row.includedConnectionCount}')
                 p.text-warning.mt-2.mb-0(*ngIf='row.invalidPermissions', translate) MCP permissions are invalid. Configure this token again before use.
             .token-actions
                 label.token-state
