@@ -4,6 +4,7 @@ import { BOOTSTRAP_DATA, BootstrapData, ConfigService, ProfilesService, VaultSer
 import { MCPCatalog, MCPPermissions, validateMCPPermissions } from '../mcp/access'
 import { MCPHTTPServer } from '../mcp/server'
 import { DEFAULT_MCP_HOST, MCP_INVALID_HOST_MESSAGE, normalizeMCPHost } from '../mcp/listenAddress'
+import type { MCPListenEndpoint } from '../mcp/networkAddresses'
 import { MCPToken, MCPTokens } from '../mcp/tokens'
 import { isMCPTokenMetadata } from '../mcp/tokenDisplay'
 import { ElectronService } from './electron.service'
@@ -71,6 +72,10 @@ export class MCPService {
 
     get address (): string|null {
         return this.settings.enabled ? this.server.address : null
+    }
+
+    get listenEndpoint (): MCPListenEndpoint|null {
+        return this.settings.enabled ? this.server.listenEndpoint : null
     }
 
     get isMainWindow (): boolean {

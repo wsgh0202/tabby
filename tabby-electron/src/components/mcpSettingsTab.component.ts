@@ -1,11 +1,12 @@
 import { marker as _ } from '@biesbjerg/ngx-translate-extract-marker'
-import { ChangeDetectorRef, Component, HostBinding, OnDestroy } from '@angular/core'
+import { ChangeDetectorRef, Component, HostBinding, HostListener, OnDestroy, OnInit } from '@angular/core'
 import { NgModel } from '@angular/forms'
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap'
 import { ConfigService, PlatformService, VaultService } from 'tabby-core'
 import { readMCPPermissions } from '../mcp/access'
 import { MCP_GLOBAL_CAPABILITIES } from '../mcp/capabilityLabels'
-import { DEFAULT_MCP_HOST, formatMCPAddress, normalizeMCPHost } from '../mcp/listenAddress'
+import { DEFAULT_MCP_HOST, getMCPMappedIPv4Address, normalizeMCPHost } from '../mcp/listenAddress'
+import { getMCPDefaultInterface, getMCPInterfaceAddresses, getMCPServiceAddresses, MCPInterfaceAddress, MCPListenEndpoint } from '../mcp/networkAddresses'
 import { MCPToken } from '../mcp/tokens'
 import { MCPService } from '../services/mcp.service'
 import { getMCPTokenLabel, isMCPTokenEnabled, isMCPTokenMetadata } from '../mcp/tokenDisplay'
@@ -24,14 +25,21 @@ interface MCPTokenRow {
     templateUrl: './mcpSettingsTab.component.pug',
     styleUrls: ['./mcpSettingsTab.component.scss'],
 })
-export class MCPSettingsTabComponent implements OnDestroy {
+export class MCPSettingsTabComponent implements OnInit, OnDestroy {
     @HostBinding('class.content-box') contentBox = true
     toolCount = MCP_GLOBAL_CAPABILITIES.length
     tokenLabel = getMCPTokenLabel
     tokenEnabled = isMCPTokenEnabled
     tokenEnabledLabel = _('Enable token: {name}')
+    selectListenIPLabel = _('Select listen IP')
+    copyAddressLabel = _('Copy {address}')
+    automaticPortLabel = _('Auto')
     host: string
     port: number|null
+    localHost = DEFAULT_MCP_HOST
+    ipv4Wildcard = '0.0.0.0'
+    interfaceAddresses: MCPInterfaceAddress[] = []
+    defaultInterface: string|null = null
     editorOpen = false
     createdToken: string|null = null
     error: string|null = null
@@ -39,6 +47,7 @@ export class MCPSettingsTabComponent implements OnDestroy {
     private editorModal: NgbModalRef|null = null
     private destroyed = false
     private restoringToggle = false
+    private findingDefaultInterface = false
     private tokenRowsCache = new WeakMap<MCPToken, MCPTokenRow>()
 
     constructor (
@@ -53,13 +62,20 @@ export class MCPSettingsTabComponent implements OnDestroy {
         this.port = mcp.settings.port
     }
 
+    ngOnInit (): void {
+        void this.refreshInterfaceAddresses()
+    }
+
     ngOnDestroy (): void {
         this.destroyed = true
         this.editorModal?.close(null)
         this.createdToken = null
     }
 
-    get previewAddress (): string {
+    private get displayEndpoint (): MCPListenEndpoint {
+        const endpoint = this.mcp.listenEndpoint
+        if (endpoint) { return endpoint }
+
         const port = this.port ?? this.mcp.settings.lastRandomPort
         let host = DEFAULT_MCP_HOST
         try {
@@ -68,15 +84,41 @@ export class MCPSettingsTabComponent implements OnDestroy {
             // Invalid drafts must not interrupt settings rendering.
             try { host = normalizeMCPHost(this.mcp.settings.host) } catch { }
         }
-        return formatMCPAddress(host, port ?? '<automatic>')
+        return { host, port: port ?? '<automatic>' }
+    }
+
+    get serviceAddresses (): ReturnType<typeof getMCPServiceAddresses> {
+        return getMCPServiceAddresses(this.displayEndpoint, this.interfaceAddresses, this.defaultInterface)
     }
 
     get wildcardHost (): boolean {
         try {
-            const host = normalizeMCPHost(this.mcp.address ? this.mcp.settings.host : this.host)
-            return host === '0.0.0.0' || host === '::'
+            const host = this.mcp.listenEndpoint?.host ?? normalizeMCPHost(this.host)
+            return host === this.ipv4Wildcard || host === '::' || getMCPMappedIPv4Address(host) === this.ipv4Wildcard
         } catch {
             return false
+        }
+    }
+
+    trackServiceAddress (_index: number, address: { url: string }): string {
+        return address.url
+    }
+
+    @HostListener('window:focus')
+    async refreshInterfaceAddresses (): Promise<void> {
+        try {
+            this.interfaceAddresses = getMCPInterfaceAddresses()
+        } catch {
+            this.interfaceAddresses = []
+        }
+        if (this.findingDefaultInterface) { return }
+        this.findingDefaultInterface = true
+        try {
+            this.defaultInterface = await getMCPDefaultInterface(this.interfaceAddresses)
+        } catch {
+            this.defaultInterface = null
+        } finally {
+            this.findingDefaultInterface = false
         }
     }
 
@@ -110,6 +152,7 @@ export class MCPSettingsTabComponent implements OnDestroy {
     }
 
     async saveSettings (enabled?: boolean): Promise<void> {
+        if (this.busy) { return }
         await this.run(async () => {
             const stopping = enabled === false
             let host: string|null = null
