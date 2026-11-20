@@ -5,7 +5,7 @@ import * as os from 'os'
 import promiseIpc, { RendererProcessType } from 'electron-promise-ipc'
 import { execFile } from 'mz/child_process'
 import { Injectable, NgZone } from '@angular/core'
-import { PlatformService, ClipboardContent, Platform, MenuItemOptions, MessageBoxOptions, MessageBoxResult, DirectoryUpload, FileUpload, FileDownload, DirectoryDownload, FileUploadOptions, wrapPromise, TranslateService, FileTransfer, PlatformTheme } from 'tabby-core'
+import { PlatformService, ClipboardContent, Platform, MenuItemOptions, MessageBoxOptions, MessageBoxResult, DirectoryUpload, FileUpload, FileDownload, DirectoryDownload, FileUploadOptions, wrapPromise, TranslateService, FileTransfer, PlatformTheme, VaultWindowsHelloStatus } from 'tabby-core'
 import { ElectronService } from '../services/electron.service'
 import { ElectronHostWindow } from './hostWindow.service'
 import { ShellIntegrationService } from './shellIntegration.service'
@@ -78,6 +78,33 @@ export class ElectronPlatformService extends PlatformService {
 
     readClipboard (): string {
         return this.electron.clipboard.readText()
+    }
+
+    async getVaultWindowsHelloStatus (): Promise<VaultWindowsHelloStatus> {
+        if (process.platform !== 'win32') {
+            return super.getVaultWindowsHelloStatus()
+        }
+        return this.electron.ipcRenderer.invoke('vault:windows-hello-status')
+    }
+
+    async enrollVaultWindowsHello (passphrase: string): Promise<boolean> {
+        if (process.platform !== 'win32') {
+            return false
+        }
+        return this.electron.ipcRenderer.invoke('vault:windows-hello-enroll', passphrase)
+    }
+
+    async unlockVaultWindowsHello (): Promise<string | null> {
+        if (process.platform !== 'win32') {
+            return null
+        }
+        return this.electron.ipcRenderer.invoke('vault:windows-hello-unlock')
+    }
+
+    async revokeVaultWindowsHello (): Promise<void> {
+        if (process.platform === 'win32') {
+            await this.electron.ipcRenderer.invoke('vault:windows-hello-revoke')
+        }
     }
 
     setClipboard (content: ClipboardContent): void {

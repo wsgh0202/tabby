@@ -1,5 +1,6 @@
 import { Component, ViewChild, ElementRef } from '@angular/core'
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap'
+import { PlatformService } from '../api/platform'
 
 /** @hidden */
 @Component({
@@ -9,10 +10,15 @@ export class UnlockVaultModalComponent {
     passphrase: string
     rememberFor = 1
     rememberOptions = [1, 5, 15, 60, 1440, 10080]
+    validateWindowsHelloPassphrase?: (passphrase: string) => Promise<void>
+    windowsHelloEnabled = false
+    windowsHelloPending = false
+    windowsHelloFailed = false
     @ViewChild('input') input: ElementRef
 
     constructor (
         private modalInstance: NgbActiveModal,
+        private platform: PlatformService,
     ) { }
 
     ngOnInit (): void {
@@ -26,12 +32,45 @@ export class UnlockVaultModalComponent {
         setTimeout(() => {
             this.input.nativeElement.focus()
         })
+        void this.platform.getVaultWindowsHelloStatus().then(status => {
+            this.windowsHelloEnabled = status.available && status.enabled && !!this.validateWindowsHelloPassphrase
+        }).catch(() => {
+            this.windowsHelloEnabled = false
+        })
     }
 
     ok (): void {
+        if (this.windowsHelloPending) {
+            return
+        }
+        this.unlock(this.passphrase)
+    }
+
+    async unlockWithWindowsHello (): Promise<void> {
+        if (!this.windowsHelloEnabled || this.windowsHelloPending || !this.validateWindowsHelloPassphrase) {
+            return
+        }
+        this.windowsHelloPending = true
+        this.windowsHelloFailed = false
+        try {
+            const passphrase = await this.platform.unlockVaultWindowsHello()
+            if (passphrase) {
+                await this.validateWindowsHelloPassphrase(passphrase)
+                this.unlock(passphrase)
+                return
+            }
+        } catch {
+            // The local credential may be stale after a passphrase change on another device.
+        } finally {
+            this.windowsHelloPending = false
+        }
+        this.windowsHelloFailed = true
+    }
+
+    private unlock (passphrase: string): void {
         window.localStorage.vaultRememberPassphraseFor = this.rememberFor
         this.modalInstance.close({
-            passphrase: this.passphrase,
+            passphrase,
             rememberFor: this.rememberFor,
         })
     }

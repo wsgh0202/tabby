@@ -473,8 +473,7 @@ export class ConfigService {
         let decryptedVault: Vault
         while (true) {
             try {
-                const passphrase = await this.vault.getPassphrase()
-                decryptedVault = await this.vault.decrypt(store.vault, passphrase)
+                decryptedVault = await this.vault.decrypt(store.vault)
                 break
             } catch (e) {
                 if (e.toString().includes('Vault unlock cancelled')) {
@@ -523,6 +522,8 @@ export class ConfigService {
                     })
                     if (result.response === 1) {
                         this.platform.quit()
+                    } else {
+                        await this.platform.revokeVaultWindowsHello()
                     }
                     return {}
                 }

@@ -13,7 +13,15 @@ test('real vault revisions prevent cached credentials crossing an unobserved loc
     const vault: VaultService = new (VaultService as any)(
         { run: callback => callback() },
         {},
-        { open: () => { prompts++; return { result: Promise.resolve({ passphrase: password, rememberFor: 1 }) } } },
+        {
+            open: () => {
+                prompts++
+                return {
+                    componentInstance: {},
+                    result: Promise.resolve({ passphrase: password, rememberFor: 1 }),
+                }
+            },
+        },
     )
     vault.forgetPassphrase()
     const bearer = 'b'.repeat(64)

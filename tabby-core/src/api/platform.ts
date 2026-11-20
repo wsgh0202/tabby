@@ -139,6 +139,12 @@ export class DirectoryUpload {
 
 export type PlatformTheme = 'light'|'dark'
 
+export interface VaultWindowsHelloStatus {
+    supported: boolean
+    available: boolean
+    enabled: boolean
+}
+
 export abstract class PlatformService {
     supportsWindowControls = false
 
@@ -154,6 +160,22 @@ export abstract class PlatformService {
     abstract setClipboard (content: ClipboardContent): void
     abstract loadConfig (): Promise<string>
     abstract saveConfig (content: string): Promise<void>
+
+    async getVaultWindowsHelloStatus (): Promise<VaultWindowsHelloStatus> {
+        return { supported: false, available: false, enabled: false }
+    }
+
+    async enrollVaultWindowsHello (_passphrase: string): Promise<boolean> {
+        return false
+    }
+
+    async unlockVaultWindowsHello (): Promise<string | null> {
+        return null
+    }
+
+    async revokeVaultWindowsHello (): Promise<void> {
+        // Windows-only platform capability.
+    }
 
     abstract startDownload (name: string, mode: number, size: number): Promise<FileDownload|null>
     abstract startDownloadDirectory (name: string, estimatedSize?: number): Promise<DirectoryDownload|null>

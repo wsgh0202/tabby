@@ -12,6 +12,7 @@ import { Window, WindowOptions } from './window'
 import { pluginManager } from './pluginManager'
 import { PTYManager } from './pty'
 import { logMainError } from './errors'
+import { registerWindowsHello } from './windowsHello'
 
 export class Application {
     private tray?: Tray
@@ -26,6 +27,9 @@ export class Application {
     constructor (private configStore: any) {
         remote.initialize()
         this.ptyManager.init(this)
+        if (process.platform === 'win32') {
+            registerWindowsHello()
+        }
 
         app.on('child-process-gone', (_event, details) => {
             if (details.type === 'GPU' && details.reason !== 'clean-exit') {

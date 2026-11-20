@@ -20,7 +20,7 @@
                 ) {{getRememberForDisplay(x)}}
 
     .text-muted.small.mb-3(translate)
-        | The master passphrase is kept in memory only. Closing Tabby requires unlocking the vault again.
+        | Closing Tabby requires unlocking the vault again.
 
     .input-group
         input.form-control.form-control-lg(
@@ -32,5 +32,16 @@
             (keyup.enter)='ok()',
             (keyup.esc)='cancel()',
         )
-        button.btn.btn-secondary((click)='ok()', *ngIf='passphrase')
+        button.btn.btn-secondary((click)='ok()', *ngIf='passphrase', [disabled]='windowsHelloPending')
             i.fas.fa-check
+
+    button.btn.btn-outline-secondary.mt-3(
+        *ngIf='windowsHelloEnabled',
+        type='button',
+        [disabled]='windowsHelloPending',
+        (click)='unlockWithWindowsHello()',
+        translate,
+    ) Unlock with Windows Hello
+
+    .text-warning.mt-2(*ngIf='windowsHelloFailed', role='status', translate)
+        | Windows Hello could not unlock the vault. Enter the master passphrase to continue.

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 import { Component, HostBinding } from '@angular/core'
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap'
-import { BaseComponent, VaultService, VaultSecret, Vault, PlatformService, ConfigService, VAULT_SECRET_TYPE_FILE, PromptModalComponent, VaultFileSecret, TranslateService } from 'tabby-core'
+import { BaseComponent, VaultService, VaultSecret, Vault, PlatformService, ConfigService, VAULT_SECRET_TYPE_FILE, PromptModalComponent, VaultFileSecret, TranslateService, VaultWindowsHelloStatus } from 'tabby-core'
 import { SetVaultPassphraseModalComponent } from './setVaultPassphraseModal.component'
 import { ShowSecretModalComponent } from './showSecretModal.component'
 
@@ -15,6 +15,9 @@ export class VaultSettingsTabComponent extends BaseComponent {
     vaultContents: Vault|null = null
     VAULT_SECRET_TYPE_FILE = VAULT_SECRET_TYPE_FILE
     searchTerm = ''
+    windowsHello: VaultWindowsHelloStatus = { supported: false, available: false, enabled: false }
+    windowsHelloPending = false
+    windowsHelloFailed = false
     @HostBinding('class.content-box') true
 
     constructor (
@@ -27,6 +30,37 @@ export class VaultSettingsTabComponent extends BaseComponent {
         super()
         if (vault.isOpen()) {
             this.loadVault()
+        }
+        void this.refreshWindowsHello()
+    }
+
+    private async refreshWindowsHello (): Promise<void> {
+        this.windowsHello = await this.platform.getVaultWindowsHelloStatus().catch(() => ({ supported: false, available: false, enabled: false }))
+    }
+
+    async toggleWindowsHello (): Promise<void> {
+        if (this.windowsHelloPending) {
+            return
+        }
+        this.windowsHelloPending = true
+        this.windowsHelloFailed = false
+        try {
+            if (this.windowsHello.enabled) {
+                await this.platform.revokeVaultWindowsHello()
+            } else {
+                const modal = this.ngbModal.open(PromptModalComponent)
+                modal.componentInstance.prompt = this.translate.instant('Master passphrase')
+                modal.componentInstance.password = true
+                const result = await modal.result.catch(() => null)
+                if (result?.value) {
+                    this.windowsHelloFailed = !await this.vault.enrollWindowsHello(result.value)
+                }
+            }
+        } catch {
+            this.windowsHelloFailed = true
+        } finally {
+            await this.refreshWindowsHello()
+            this.windowsHelloPending = false
         }
     }
 
@@ -47,6 +81,7 @@ export class VaultSettingsTabComponent extends BaseComponent {
         if (newPassphrase) {
             await this.vault.setEnabled(true, newPassphrase)
             this.vaultContents = await this.vault.load(newPassphrase)
+            await this.refreshWindowsHello()
         }
     }
 
@@ -64,6 +99,8 @@ export class VaultSettingsTabComponent extends BaseComponent {
             },
         )).response === 0) {
             await this.vault.setEnabled(false)
+            this.vaultContents = null
+            await this.refreshWindowsHello()
         }
     }
 
@@ -77,7 +114,9 @@ export class VaultSettingsTabComponent extends BaseComponent {
         const modal = this.ngbModal.open(SetVaultPassphraseModalComponent)
         const newPassphrase = await modal.result.catch(() => null)
         if (newPassphrase) {
-            this.vault.save(this.vaultContents, newPassphrase)
+            await this.platform.revokeVaultWindowsHello()
+            await this.refreshWindowsHello()
+            await this.vault.save(this.vaultContents, newPassphrase)
         }
     }
 

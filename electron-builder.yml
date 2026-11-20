@@ -12,6 +12,7 @@ files:
 - dist
 - '!lib'
 - '!src'
+- '!native'
 - '!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme,node.lib}'
 - '!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples,docs}'
 - '!**/node_modules/@angular/common/locales'
@@ -41,6 +42,7 @@ extraResources:
 - extras
 asarUnpack:
 - 'dist/*.map'
+- 'dist/windows-hello.node'
 - node_modules/keytar/build/Release/*.node
 - node_modules/**/*.node
 - node_modules/node-pty/build/Release/conpty/*
