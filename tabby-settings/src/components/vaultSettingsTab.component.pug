@@ -78,6 +78,22 @@ div(*ngIf='vault.isEnabled()')
                 (click)='toggleConfigEncrypted()',
             )
 
+    .form-line(*ngIf='windowsHello.supported')
+        .header
+            label.title(for='vault-windows-hello', translate) Unlock with Windows Hello
+            .description(translate) Stores a copy of the master passphrase encrypted for your Windows account on this device.
+            .description(*ngIf='!windowsHello.available', translate) Windows Hello is unavailable on this device.
+            .text-warning.mt-2(*ngIf='windowsHelloFailed', role='status', translate) Could not update Windows Hello for this vault.
+        .form-check.form-switch
+            input.form-check-input(
+                id='vault-windows-hello',
+                type='checkbox',
+                role='switch',
+                [checked]='windowsHello.enabled',
+                [disabled]='windowsHelloPending || (!windowsHello.enabled && !windowsHello.available)',
+                (click)='$event.preventDefault(); toggleWindowsHello()',
+            )
+
     .text-center(*ngIf='!vaultContents')
         i.fas.fa-key.fa-3x
         h3.m-3(translate) Vault is locked

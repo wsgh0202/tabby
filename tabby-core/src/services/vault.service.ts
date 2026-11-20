@@ -118,6 +118,7 @@ export class VaultService {
         private zone: NgZone,
         private notifications: NotificationsService,
         private ngbModal: NgbModal,
+        private platform: PlatformService,
     ) {
         this.getPassphrase = serializeFunction(this.getPassphrase.bind(this))
     }
@@ -128,6 +129,8 @@ export class VaultService {
                 await this.save(migrateVaultContent({}), passphrase)
             }
         } else {
+            await this.platform.revokeVaultWindowsHello()
+            this.forgetPassphrase()
             this.store = null
             this.contentChanged.next()
         }
@@ -143,7 +146,7 @@ export class VaultService {
 
     async decrypt (storage: StoredVault, passphrase?: string): Promise<Vault> {
         if (!passphrase) {
-            passphrase = await this.getPassphrase()
+            passphrase = await this.getPassphrase(storage)
         }
         try {
             return await wrapPromise(this.zone, decryptVault(storage, passphrase))
@@ -179,9 +182,22 @@ export class VaultService {
         this.contentChanged.next()
     }
 
-    async getPassphrase (): Promise<string> {
+    async enrollWindowsHello (passphrase: string): Promise<boolean> {
+        if (!this.store || !passphrase) {
+            return false
+        }
+        await wrapPromise(this.zone, decryptVault(this.store, passphrase))
+        return this.platform.enrollVaultWindowsHello(passphrase)
+    }
+
+    async getPassphrase (storage = this.store): Promise<string> {
         if (!_rememberedPassphrase) {
             const modal = this.ngbModal.open(UnlockVaultModalComponent)
+            if (storage) {
+                modal.componentInstance.validateWindowsHelloPassphrase = async (passphrase: string) => {
+                    await decryptVault(storage, passphrase)
+                }
+            }
             const result = await modal.result.catch(() => null)
             if (!result) {
                 throw new Error('Vault unlock cancelled')

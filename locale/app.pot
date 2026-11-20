@@ -1229,3 +1229,24 @@ msgstr ""
 #: tabby-terminal/src/hotkeys.ts:58
 msgid "Zoom out"
 msgstr ""
+
+msgid "Closing Tabby requires unlocking the vault again."
+msgstr ""
+
+msgid "Could not update Windows Hello for this vault."
+msgstr ""
+
+msgid "Master passphrase"
+msgstr ""
+
+msgid "Stores a copy of the master passphrase encrypted for your Windows account on this device."
+msgstr ""
+
+msgid "Unlock with Windows Hello"
+msgstr ""
+
+msgid "Windows Hello could not unlock the vault. Enter the master passphrase to continue."
+msgstr ""
+
+msgid "Windows Hello is unavailable on this device."
+msgstr ""

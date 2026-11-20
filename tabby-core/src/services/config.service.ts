@@ -473,8 +473,7 @@ export class ConfigService {
         let decryptedVault: Vault
         while (true) {
             try {
-                const passphrase = await this.vault.getPassphrase()
-                decryptedVault = await this.vault.decrypt(store.vault, passphrase)
+                decryptedVault = await this.vault.decrypt(store.vault)
                 break
             } catch (e) {
                 if (e.toString().includes('Vault unlock cancelled')) {

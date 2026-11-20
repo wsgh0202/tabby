@@ -2579,3 +2579,24 @@ msgstr "缩小"
 msgctxt "[Dynamic] port forwarding"
 msgid "id.port-forwarding.dynamic"
 msgstr "动态端口转发"
+
+msgid "Closing Tabby requires unlocking the vault again."
+msgstr "关闭 Tabby 后，下次需要重新解锁保险库。"
+
+msgid "Could not update Windows Hello for this vault."
+msgstr "无法更新此保险库的 Windows Hello 设置。"
+
+msgid "Master passphrase"
+msgstr "主密码"
+
+msgid "Stores a copy of the master passphrase encrypted for your Windows account on this device."
+msgstr "主密码的副本经加密后保存在此设备上，由当前 Windows 帐户保护。"
+
+msgid "Unlock with Windows Hello"
+msgstr "使用 Windows Hello 解锁"
+
+msgid "Windows Hello could not unlock the vault. Enter the master passphrase to continue."
+msgstr "Windows Hello 未能解锁保险库。请输入主密码继续。"
+
+msgid "Windows Hello is unavailable on this device."
+msgstr "此设备上的 Windows Hello 不可用。"

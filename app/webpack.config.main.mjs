@@ -36,6 +36,7 @@ const config = {
         ],
     },
     externals: {
+        './windows-hello.node': 'commonjs ./windows-hello.node',
         'any-promise': 'commonjs any-promise',
         electron: 'commonjs electron',
         'electron-config': 'commonjs electron-config',
