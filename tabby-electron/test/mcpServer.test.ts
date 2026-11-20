@@ -319,10 +319,19 @@ test('literal IPv6 and dual-stack wildcard listeners serve authenticated MCP req
             assert.equal((await rpc(server, 'tools/list')).status, 200)
             assert.equal((await rpc(server, 'tools/list', {}, { Origin: `http://[::1]:${server.port}` })).status, 200)
             assert.equal((await rpc(server, 'tools/list', {}, { Origin: 'http://untrusted.invalid' })).status, 403)
+            let dualStack = false
             if (host === '::') {
                 const response = await fetch(`http://127.0.0.1:${server.port}/mcp`, { headers: { Authorization: `Bearer ${bearer}` } })
-                assert.equal(response.status, 405, 'IPv4-mapped sockets keep accepting their IPv4 Host header')
+                    .catch(error => {
+                        if (error.cause?.code === 'ECONNREFUSED') { return null }
+                        throw error
+                    })
+                if (response) {
+                    assert.equal(response.status, 405, 'IPv4-mapped sockets keep accepting their IPv4 Host header')
+                    dualStack = true
+                }
             }
+            assert.deepEqual(server.listenEndpoint, { host, port: server.port, dualStack })
         } finally { await server.stop() }
     }
 })
@@ -335,6 +344,7 @@ test('a real LAN interface accepts official SDK clients and rejects foreign Host
     try {
         await server.start(null, null, host)
         assert.equal(server.address, formatMCPAddress(host, server.port!))
+        assert.deepEqual(server.listenEndpoint, { host, port: server.port, dualStack: false })
         await client.connect(new StreamableHTTPClientTransport(new URL(server.address!), { requestInit: { headers: { Authorization: `Bearer ${bearer}` } } }))
         assert.equal((await client.listTools()).tools.length, 3)
         assert.equal((await fetch(server.address!)).status, 401)

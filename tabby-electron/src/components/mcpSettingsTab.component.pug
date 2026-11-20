@@ -4,33 +4,50 @@ p.text-muted.mb-4(translate) Allow agents to discover Tabby connections through 
 section.mcp-section
     .section-heading
         h4.mb-0(translate) Server configuration
-        span.text-success(*ngIf='mcp.address', translate) Running
-        span.text-muted(*ngIf='!mcp.address', translate) Stopped
+        span.text-success(*ngIf='mcp.listenEndpoint', translate) Running
+        span.text-muted(*ngIf='!mcp.listenEndpoint', translate) Stopped
     .form-line
         .header
             .title(translate) Enable MCP server
             .description(translate) Requests require a bearer token and an unlocked vault.
         toggle(#serverEnabled='ngModel', [ngModel]='mcp.settings.enabled', (ngModelChange)='setEnabled($event, serverEnabled)', [disabled]='busy')
-    .form-line.host-line
-        .header
-            label.title(for='mcp-host', translate) Listen IP
-            .description(translate) Use 127.0.0.1 for local access, a LAN IP for a specific interface, or 0.0.0.0 for all IPv4 interfaces.
-        input#mcp-host.form-control.host-input(type='text', [(ngModel)]='host', [disabled]='busy', spellcheck='false', autocomplete='off')
-    .form-line.port-line
-        .header
-            label.title(for='mcp-port', translate) Port
-            .description(translate) Leave empty to reuse the previous automatic port, or choose a free port automatically.
-        .port-input
-            input#mcp-port.form-control(type='number', min='1', max='65535', [(ngModel)]='port', [disabled]='busy')
-            button.btn.btn-secondary(type='button', (click)='saveSettings()', [disabled]='busy', translate) Apply
+    form.listen-settings((ngSubmit)='refreshInterfaceAddresses(); saveSettings()')
+        label.listen-host-label(for='mcp-host', translate) Listen IP
+        label.listen-port-label(for='mcp-port', translate) Port
+        .listen-picker(ngbDropdown, display='static', (openChange)='$event && refreshInterfaceAddresses()')
+            .input-group
+                input#mcp-host.form-control(type='text', name='host', [(ngModel)]='host', [disabled]='busy', spellcheck='false', autocomplete='off')
+                button.btn.btn-secondary(ngbDropdownToggle, type='button', [disabled]='busy', [attr.aria-label]='selectListenIPLabel | translate', aria-controls='mcp-host-options')
+            #mcp-host-options.listen-options(ngbDropdownMenu)
+                button.listen-option(ngbDropdownItem, type='button', [disabled]='busy', (click)='host = localHost')
+                    code {{localHost}}
+                    span.text-muted(translate) This computer
+                button.listen-option(ngbDropdownItem, type='button', [disabled]='busy', (click)='host = ipv4Wildcard')
+                    code {{ipv4Wildcard}}
+                    span.text-muted(translate) All IPv4 interfaces
+                button.listen-option(ngbDropdownItem, *ngFor='let entry of interfaceAddresses', type='button', [disabled]='busy', (click)='host = entry.host')
+                    code {{entry.host}}
+                    span.text-muted {{entry.interfaceName}}
+        span.listen-separator(aria-hidden='true') :
+        input#mcp-port.form-control.listen-port(type='number', name='port', min='1', max='65535', [(ngModel)]='port', [disabled]='busy', [placeholder]='automaticPortLabel | translate')
+        button.btn.btn-secondary.listen-apply(type='submit', [disabled]='busy', translate) Apply
     p.text-muted.small.mb-0(translate) Select a trusted network. LAN requests use unencrypted HTTP.
     .server-address
-        .address-copy
-            span(translate) Server address
-            code {{mcp.address || previewAddress}}
-        button.btn.btn-secondary(type='button', (click)='copy(mcp.address!)', *ngIf='mcp.address', translate) Copy
+        #mcp-address-title(aria-live='polite')
+            span(*ngIf='mcp.listenEndpoint', translate) Server address
+            span(*ngIf='!mcp.listenEndpoint', translate) Server address preview
+        ul.address-list(aria-labelledby='mcp-address-title')
+            li.address-row(*ngFor='let entry of serviceAddresses; trackBy: trackServiceAddress')
+                div
+                    code {{entry.url}}
+                    .address-interface.text-muted.small(*ngIf='entry.interfaceName')
+                        span {{entry.interfaceName}}
+                        span(*ngIf='entry.isDefault', translate) Default network interface
+                    div.text-muted.small(*ngIf='entry.host === localHost || entry.host === "::1"', translate) This computer
+                button.btn.btn-secondary.btn-sm(type='button', *ngIf='mcp.listenEndpoint', (click)='copy(entry.url)', [attr.aria-label]='copyAddressLabel | translate: {address: entry.url}', [attr.title]='"Copy" | translate')
+                    i.fas.fa-copy(aria-hidden='true')
     p.text-muted.small.mt-2.mb-0(*ngIf='wildcardHost', translate) When listening on all interfaces, connect remotely using this computer's LAN IP.
-    p.text-muted.mb-0.mt-2(*ngIf='!mcp.address && !mcp.error', translate) Server is stopped or managed by the main window.
+    p.text-muted.mb-0.mt-2(*ngIf='!mcp.listenEndpoint && !mcp.error', translate) Server is stopped or managed by the main window.
 
 .alert.alert-danger(*ngIf='mcp.error', role='alert') {{mcp.error | translate}}
 .alert.alert-danger(*ngIf='error', role='alert') {{error | translate}}

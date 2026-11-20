@@ -1,7 +1,7 @@
 import { NgModule } from '@angular/core'
 import { CommonModule } from '@angular/common'
 import { FormsModule } from '@angular/forms'
-import { NgbPopoverModule } from '@ng-bootstrap/ng-bootstrap'
+import { NgbDropdownModule, NgbPopoverModule } from '@ng-bootstrap/ng-bootstrap'
 import { SettingsTabProvider } from 'tabby-settings'
 import TabbyCorePlugin, { PlatformService, LogService, UpdaterService, DockingService, HostAppService, ThemesService, Platform, AppService, ConfigService, WIN_BUILD_FLUENT_BG_SUPPORTED, isWindowsBuild, HostWindowService, HotkeyProvider, ConfigProvider, FileProvider } from 'tabby-core'
 import { TerminalColorSchemeProvider, TerminalContextMenuItemProvider, TerminalDecorator } from 'tabby-terminal'
@@ -52,7 +52,7 @@ import { WSLShellProvider } from './shells/wsl'
 import { VSDevToolsProvider } from './shells/vs'
 
 @NgModule({
-    imports: [CommonModule, FormsModule, NgbPopoverModule, TabbyCorePlugin],
+    imports: [CommonModule, FormsModule, NgbDropdownModule, NgbPopoverModule, TabbyCorePlugin],
     declarations: [MCPSettingsTabComponent, MCPTokenModalComponent, MCPConnectionsModalComponent, MCPBatchModalComponent, MCPCapabilityHelpComponent],
     providers: [
         { provide: SettingsTabProvider, useClass: MCPSettingsTabProvider, multi: true },

@@ -22,18 +22,23 @@ export function formatMCPAddress (host: string, port: number|string): string {
     return `http://${authority(localHost, port)}/mcp`
 }
 
+/** Convert a normalized IPv4-mapped IPv6 literal to its IPv4 destination. */
+export function getMCPMappedIPv4Address (host: string): string|null {
+    const mapped = /^::ffff:([a-f\d]{1,4}):([a-f\d]{1,4})$/.exec(host)
+    if (!mapped) { return null }
+    const high = parseInt(mapped[1], 16)
+    const low = parseInt(mapped[2], 16)
+    return [high >> 8, high & 255, low >> 8, low & 255].join('.')
+}
+
 /** Trust the actual accepted interface, never an arbitrary DNS Host header. */
 export function getMCPAllowedHosts (localAddress: string|undefined, port: number): string[] {
     let host = ''
     try { host = normalizeMCPHost(localAddress) } catch { return [] }
     const hosts = [host]
     // Dual-stack listeners can report an IPv4 connection as ::ffff:aabb:ccdd.
-    const mapped = /^::ffff:([a-f\d]{1,4}):([a-f\d]{1,4})$/.exec(host)
-    if (mapped) {
-        const high = parseInt(mapped[1], 16)
-        const low = parseInt(mapped[2], 16)
-        hosts.push([high >> 8, high & 255, low >> 8, low & 255].join('.'))
-    }
+    const mapped = getMCPMappedIPv4Address(host)
+    if (mapped) { hosts.push(mapped) }
     if (hosts.some(address => address === '::1' || address.startsWith('127.'))) {
         hosts.push('localhost')
     }
