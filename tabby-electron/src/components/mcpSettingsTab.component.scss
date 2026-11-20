@@ -5,46 +5,51 @@
     border-radius: .375rem;
 }
 
-.section-heading, .server-address, .port-input, .token-row, .token-actions {
+.section-heading, .token-row, .token-actions {
     display: flex;
     align-items: center;
     gap: .75rem;
 }
 
-.section-heading, .server-address, .token-row {
+.section-heading, .token-row {
     justify-content: space-between;
     flex-wrap: wrap;
 }
 
 .section-heading { margin-bottom: 1rem; }
 
-.port-line, .host-line {
-    flex-wrap: wrap;
-
-    .header { flex: 1 1 16rem; }
+.listen-settings {
+    display: grid;
+    grid-template-columns: minmax(0, 20rem) auto minmax(4.5rem, 8rem) max-content;
+    grid-template-areas: 'ip-label . port-label .' 'ip-field separator port apply';
+    gap: .25rem .5rem;
+    align-items: center;
+    justify-content: start;
+    margin: 1rem 0;
 }
 
-.host-input {
-    width: 20rem;
-    max-width: 100%;
-    flex-shrink: 0;
+// Angular's style scoping rewrites minified values that start with `:host`.
+.listen-host-label { grid-area: ip-label; }
+.listen-port-label { grid-area: port-label; }
+.listen-picker { grid-area: ip-field; min-width: 0; }
+.listen-separator { grid-area: separator; }
+.listen-port { grid-area: port; }
+.listen-apply { grid-area: apply; }
+
+.listen-options {
+    top: 100%;
+    left: 0;
+    max-width: min(32rem, 75vw);
+    max-height: 16rem;
+    overflow-y: auto;
 }
 
-.port-input {
-    width: 13rem;
-    max-width: 100%;
-    flex-shrink: 0;
-
-    input {
-        min-width: 0;
-        flex: 1 1 0;
-        width: 0;
-    }
-
-    .btn {
-        flex: 0 0 auto;
-        white-space: nowrap;
-    }
+.listen-option {
+    display: flex;
+    justify-content: space-between;
+    gap: .75rem;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 
 .server-address {
@@ -53,11 +58,35 @@
     margin-top: 1rem;
 }
 
-.address-copy {
+.address-list {
+    --address-row-height: 3rem;
+    list-style: none;
+    padding: 0 .375rem 0 0;
+    margin: .5rem 0 0;
+    max-height: calc(3 * var(--address-row-height));
+    overflow-y: auto;
+}
+
+.address-row {
     display: flex;
-    flex-direction: column;
-    gap: .5rem;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    min-height: var(--address-row-height);
+    padding: .25rem 0;
+    border-top: 1px solid var(--theme-bg-more-2);
     overflow-wrap: anywhere;
+
+    > div { min-width: 0; }
+    > button { flex-shrink: 0; }
+}
+
+.address-interface {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: .5rem;
+
+    > span + span::before { content: '· '; }
 }
 
 .token-list { padding: 0; }
@@ -104,10 +133,10 @@
 }
 
 @media (max-width: 575px) {
-    .port-line, .host-line {
-        flex-wrap: wrap;
-        gap: .75rem;
+    .listen-settings {
+        grid-template-columns: minmax(0, 1fr) auto 4.75rem max-content;
+        column-gap: .25rem;
     }
 
-    .port-input, .host-input { width: 100%; }
+    .listen-picker input, .listen-picker button, .listen-port, .listen-apply { padding-inline: .375rem; }
 }

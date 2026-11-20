@@ -6,10 +6,12 @@ import { MCPSettingsTabComponent } from '../src/components/mcpSettingsTab.compon
 import { MCPTokenModalComponent } from '../src/components/mcpTokenModal.component'
 import { MCPConnectionsModalComponent } from '../src/components/mcpConnectionsModal.component'
 import { newMCPPermissions } from '../src/mcp/access'
+import type { MCPListenEndpoint } from '../src/mcp/networkAddresses'
 
 function setup () {
     const calls: any[] = []
     const mcp = {
+        listenEndpoint: null as MCPListenEndpoint|null,
         settings: { enabled: false, host: '127.0.0.1', port: null as number|null, lastRandomPort: null as number|null, tokens: [] as any[] },
         refresh: async () => { calls.push('refresh') },
         getCatalog: async () => ({ groups: [], connections: [] }),
@@ -44,12 +46,12 @@ function setup () {
 
 test('settings preview tracks explicit and remembered ports and validates input', async () => {
     const { component, mcp, calls } = setup()
-    assert.match(component.previewAddress, /<automatic>/)
+    assert.match(component.serviceAddresses[0].url, /<automatic>/)
     mcp.settings.lastRandomPort = 12345
-    assert.equal(component.previewAddress, 'http://127.0.0.1:12345/mcp')
+    assert.equal(component.serviceAddresses[0].url, 'http://127.0.0.1:12345/mcp')
     component.port = 23456
     await component.saveSettings(true)
-    assert.equal(component.previewAddress, 'http://127.0.0.1:23456/mcp')
+    assert.equal(component.serviceAddresses[0].url, 'http://127.0.0.1:23456/mcp')
     assert.deepEqual(calls, ['save', 'refresh'])
     component.port = 65536
     await component.saveSettings(true)
@@ -73,6 +75,23 @@ test('failed settings writes restore previous values and clear the busy state', 
     assert.equal(component.busy, false)
 })
 
+test('a second submission does not replace listener settings during an active write', async () => {
+    const { component, mcp, config, calls } = setup()
+    let finishWrite!: () => void
+    const writing = new Promise<void>(resolve => { finishWrite = resolve })
+    config.save = async () => { calls.push('save'); await writing }
+    component.host = '0.0.0.0'
+    component.port = 12345
+    const applying = component.saveSettings()
+    component.port = 23456
+    const duplicate = component.saveSettings()
+    finishWrite()
+    await Promise.all([applying, duplicate])
+    assert.equal(mcp.settings.host, '0.0.0.0')
+    assert.equal(mcp.settings.port, 12345)
+    assert.deepEqual(calls, ['save', 'refresh'])
+})
+
 test('listener IP defaults to loopback and applies normalized IPv4 or IPv6 drafts', async () => {
     const { component, mcp, calls } = setup()
     assert.equal(component.host, '127.0.0.1')
@@ -81,13 +100,13 @@ test('listener IP defaults to loopback and applies normalized IPv4 or IPv6 draft
     await component.saveSettings()
     assert.equal(mcp.settings.host, '192.168.1.20')
     assert.equal(component.host, '192.168.1.20')
-    assert.equal(component.previewAddress, 'http://192.168.1.20:12345/mcp')
+    assert.equal(component.serviceAddresses[0].url, 'http://192.168.1.20:12345/mcp')
     assert.equal(mcp.settings.enabled, false)
     assert.deepEqual(calls, ['save', 'refresh'])
     component.host = '::1'
     await component.saveSettings(true)
     assert.equal(mcp.settings.host, '::1')
-    assert.equal(component.previewAddress, 'http://[::1]:12345/mcp')
+    assert.equal(component.serviceAddresses[0].url, 'http://[::1]:12345/mcp')
 })
 
 test('invalid listener IP drafts cannot be applied or enabled and do not break previews', async () => {
@@ -96,7 +115,7 @@ test('invalid listener IP drafts cannot be applied or enabled and do not break p
     component.port = 12345
     for (const host of ['', 'localhost', '192.168.1.999', 'http://127.0.0.1', 'fe80::1%eth0']) {
         component.host = host
-        assert.equal(component.previewAddress, 'http://192.168.1.20:12345/mcp')
+        assert.equal(component.serviceAddresses[0].url, 'http://192.168.1.20:12345/mcp')
         await component.saveSettings()
         assert.equal(component.error, 'MCP listen IP must be a valid IPv4 or IPv6 address')
         await component.saveSettings(true)
@@ -112,13 +131,43 @@ test('wildcard listener previews use reachable loopback URLs and explain LAN add
     const { component } = setup()
     component.port = 12345
     component.host = '0.0.0.0'
-    assert.equal(component.previewAddress, 'http://127.0.0.1:12345/mcp')
+    assert.equal(component.serviceAddresses[0].url, 'http://127.0.0.1:12345/mcp')
     assert.equal(component.wildcardHost, true)
     component.host = '::'
-    assert.equal(component.previewAddress, 'http://[::1]:12345/mcp')
+    assert.equal(component.serviceAddresses[0].url, 'http://[::1]:12345/mcp')
     assert.equal(component.wildcardHost, true)
     component.host = 'invalid'
     assert.equal(component.wildcardHost, false)
+})
+
+test('running service addresses use the bound host and actual port, not pending edits', () => {
+    const { component, mcp } = setup()
+    component.interfaceAddresses = [
+        { host: '172.17.0.1', interfaceName: 'docker0' },
+        { host: '192.168.1.20', interfaceName: 'ens18' },
+        { host: '2001:db8::1', interfaceName: 'ens18' },
+    ]
+    mcp.listenEndpoint = { host: '0.0.0.0', port: 12345 }
+    component.host = '192.168.1.20'
+    component.port = 23456
+    assert.deepEqual(component.serviceAddresses.map(entry => entry.host), ['127.0.0.1', '172.17.0.1', '192.168.1.20'])
+    component.defaultInterface = 'ens18'
+    assert.deepEqual(component.serviceAddresses.map(entry => entry.url), [
+        'http://192.168.1.20:12345/mcp', 'http://127.0.0.1:12345/mcp', 'http://172.17.0.1:12345/mcp',
+    ])
+    assert.equal(component.serviceAddresses[0].interfaceName, 'ens18')
+    assert.equal(component.serviceAddresses[0].isDefault, true)
+    mcp.listenEndpoint = { host: '192.168.1.20', port: 23456 }
+    assert.deepEqual(component.serviceAddresses.map(entry => entry.url), ['http://192.168.1.20:23456/mcp'])
+    mcp.listenEndpoint = { host: '::ffff:7f00:1', port: 12345 }
+    assert.deepEqual(component.serviceAddresses.map(entry => entry.url), ['http://127.0.0.1:12345/mcp'])
+    mcp.listenEndpoint = { host: '::ffff:0:0', port: 12345 }
+    assert.deepEqual(component.serviceAddresses.map(entry => entry.host), ['192.168.1.20', '127.0.0.1', '172.17.0.1'])
+    assert.equal(component.wildcardHost, true)
+    mcp.listenEndpoint = { host: '::', port: 12345, dualStack: false }
+    assert.deepEqual(component.serviceAddresses.map(entry => entry.host), ['::1', '2001:db8::1'])
+    mcp.listenEndpoint = { ...mcp.listenEndpoint, dualStack: true }
+    assert.ok(component.serviceAddresses.some(entry => entry.host === '127.0.0.1'))
 })
 
 test('stopping ignores invalid listener drafts without overwriting saved valid settings', async () => {

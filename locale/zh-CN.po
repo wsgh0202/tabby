@@ -3062,3 +3062,21 @@ msgstr "未命名令牌"
 
 msgid "When the agent calls the close tool, also close its terminal tab. When disabled, disconnect and keep the tab for reviewing commands and output."
 msgstr "Agent 调用关闭工具时，同时关闭其终端标签页。未勾选时仅断开连接，保留标签页以便审查命令和回显。"
+
+msgid "Select listen IP"
+msgstr "选择监听 IP"
+
+msgid "Copy {address}"
+msgstr "复制 {address}"
+
+msgid "This computer"
+msgstr "本机"
+
+msgid "All IPv4 interfaces"
+msgstr "所有 IPv4 网卡"
+
+msgid "Default network interface"
+msgstr "默认网卡"
+
+msgid "Server address preview"
+msgstr "服务地址预览"

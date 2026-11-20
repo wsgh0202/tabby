@@ -1,9 +1,11 @@
 import { createServer, IncomingMessage, Server as HTTPServer, ServerResponse } from 'http'
+import { connect, Socket } from 'net'
 import { Server, StreamableHTTPServerTransport, CallToolRequestSchema, ListToolsRequestSchema } from './sdk'
 import { callMCPTool, canAccessConnection, MCPCatalog, MCPConnection, resolveMCPConnectionCapability } from './access'
 import { MCP_TOOLS, MCPToolError, validateMCPToolArguments } from './tools'
 import { MCPToken } from './tokens'
 import { DEFAULT_MCP_HOST, formatMCPAddress, getMCPAllowedHosts, normalizeMCPHost } from './listenAddress'
+import type { MCPListenEndpoint } from './networkAddresses'
 
 export interface MCPServerOptions {
     authenticate: (token: string) => Promise<MCPToken|null>
@@ -17,17 +19,45 @@ export interface MCPRequestOrigin {
     source: string
 }
 
+// A wildcard IPv6 listener may also accept IPv4, depending on the platform.
+// Match the probe against this server's accepted socket before publishing IPv4 URLs.
+function acceptsIPv4 (server: HTTPServer, port: number): Promise<boolean> {
+    return new Promise(resolve => {
+        const client = connect(port, DEFAULT_MCP_HOST)
+        let accepted = false
+        const onConnection = (socket: Socket) => {
+            if (socket.remoteAddress === '::ffff:127.0.0.1' && socket.remotePort === client.localPort) {
+                accepted = true
+                client.destroy()
+            }
+        }
+        const timeout = setTimeout(() => client.destroy(), 500)
+        server.on('connection', onConnection)
+        client.once('error', () => client.destroy())
+        client.once('close', () => {
+            clearTimeout(timeout)
+            server.off('connection', onConnection)
+            resolve(accepted)
+        })
+    })
+}
+
 /** Stateless SDK transports keep every request bound to its current bearer token. */
 export class MCPHTTPServer {
     port: number|null = null
     private http: HTTPServer|null = null
     private active = false
     private host = DEFAULT_MCP_HOST
+    private dualStack = false
 
     constructor (private options: MCPServerOptions) { }
 
     get address (): string|null {
         return this.port === null ? null : formatMCPAddress(this.host, this.port)
+    }
+
+    get listenEndpoint (): MCPListenEndpoint|null {
+        return this.active && this.port !== null ? { host: this.host, port: this.port, dualStack: this.dualStack } : null
     }
 
     async start (port: number|null, lastRandomPort: number|null, host = DEFAULT_MCP_HOST): Promise<number> {
@@ -46,8 +76,13 @@ export class MCPHTTPServer {
             }
             await this.listen(0)
         }
+        const listener = this.http!
+        const actualPort = this.port!
+        const dualStack = listenHost === '::' && await acceptsIPv4(listener, actualPort)
+        if (this.http !== listener) { throw new Error('MCP listener stopped while starting') }
+        this.dualStack = dualStack
         this.active = true
-        return this.port!
+        return actualPort
     }
 
     async stop (): Promise<void> {
