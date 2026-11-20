@@ -5,26 +5,67 @@ import { readFile, rm, stat } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { configPath } from './config'
-import { isWindowsBuild } from './windows'
+import { getWindows10Build } from './windows'
+import { logMainError } from './errors'
 
 interface WindowsHello {
-    verify: (window?: Buffer, message?: string) => Promise<boolean>
+    checkAvailability: () => Promise<number>
+    verify: (window: Buffer, message: string) => Promise<boolean>
+}
+
+// Values returned by the WinRT UserConsentVerifierAvailability enum.
+enum ConsentAvailability {
+    Available = 0,
+    DeviceNotPresent = 1,
+    NotConfiguredForUser = 2,
+    DisabledByPolicy = 3,
+    DeviceBusy = 4,
 }
 
 export function registerWindowsHello (): void {
+    const windowsBuild = getWindows10Build() ?? 0
     let hello: WindowsHello | undefined = undefined
-    if (isWindowsBuild(22000)) {
-        try {
-            hello = require('./windows-hello.node')
-        } catch {
-            // The vault must remain usable if the native module is unavailable.
-        }
+    try {
+        hello = require('./windows-hello.node')
+    } catch (error) {
+        logMainError('Windows Hello native module failed to load', error)
     }
 
     const configID = createHash('sha256').update(resolve(configPath).toLowerCase()).digest('hex')
     const credentialPath = join(app.getPath('userData'), `vault-hello-${configID}.bin`)
     const appURL = pathToFileURL(join(app.getAppPath(), 'dist', 'index.html')).href
     let operation = Promise.resolve<unknown>(undefined)
+    let lastAvailabilityError: string | undefined = undefined
+
+    function reportAvailabilityError (detail: string): void {
+        if (detail !== lastAvailabilityError) {
+            logMainError('Windows Hello unavailable', detail)
+            lastAvailabilityError = detail
+        }
+    }
+
+    async function getAvailability (): Promise<boolean> {
+        if (!hello) {
+            reportAvailabilityError(`Native verifier unavailable on Windows build ${windowsBuild}`)
+            return false
+        }
+        try {
+            if (!await safeStorage.isAsyncEncryptionAvailable()) {
+                reportAvailabilityError('Windows credential encryption is unavailable')
+                return false
+            }
+            const status = await hello.checkAvailability()
+            // A busy device can still be used once Windows queues the verification request.
+            if (status === ConsentAvailability.Available || status === ConsentAvailability.DeviceBusy) {
+                lastAvailabilityError = undefined
+                return true
+            }
+            reportAvailabilityError(`Windows build ${windowsBuild}, verifier status ${ConsentAvailability[status] ?? `0x${(status >>> 0).toString(16)}`}`)
+        } catch (error) {
+            reportAvailabilityError(error instanceof Error ? error.message : String(error))
+        }
+        return false
+    }
 
     function trustedWindow (event: IpcMainInvokeEvent): BrowserWindow | null {
         const frame = event.senderFrame
@@ -56,7 +97,7 @@ export function registerWindowsHello (): void {
             return { supported: false, available: false, enabled: false }
         }
         const enabled = await stat(credentialPath).then(file => file.isFile(), () => false)
-        const available = await (async () => Boolean(hello && await safeStorage.isAsyncEncryptionAvailable() && await hello.verify()))().catch(() => false)
+        const available = await getAvailability()
         return { supported: true, available, enabled }
     })
 
