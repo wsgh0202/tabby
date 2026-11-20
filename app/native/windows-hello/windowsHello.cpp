@@ -49,12 +49,15 @@ static void execute(napi_env, void* data) {
         return;
     }
     try {
+        const auto status = UserConsentVerifier::CheckAvailabilityAsync().get();
+        request.availability = static_cast<int32_t>(status);
+        if (status != UserConsentVerifierAvailability::Available && status != UserConsentVerifierAvailability::DeviceBusy) {
+            RoUninitialize();
+            return;
+        }
         const auto interop = winrt::try_get_activation_factory<UserConsentVerifier, IUserConsentVerifierInterop>();
         if (!request.window) {
-            const auto status = UserConsentVerifier::CheckAvailabilityAsync().get();
-            request.availability = static_cast<int32_t>(status);
-            if ((status == UserConsentVerifierAvailability::Available || status == UserConsentVerifierAvailability::DeviceBusy) &&
-                !interop && !KeyCredentialManager::IsSupportedAsync().get()) {
+            if (!interop && !KeyCredentialManager::IsSupportedAsync().get()) {
                 request.availability = E_NOINTERFACE;
             }
         } else if (interop) {
@@ -87,16 +90,20 @@ static void complete(napi_env env, napi_status status, void* data) {
     napi_delete_async_work(env, request->work);
 }
 
-static napi_value start(napi_env env, napi_callback_info info) {
+static napi_value start(napi_env env, napi_callback_info info, bool verifyWindow) {
     auto request = std::make_unique<HelloRequest>();
     napi_value args[2];
     size_t count = 2;
     napi_get_cb_info(env, info, &count, args, nullptr, nullptr);
-    if (count != 0) {
+    if (count != (verifyWindow ? 2u : 0u)) {
+        napi_throw_type_error(env, nullptr, verifyWindow ? "Expected a window handle and a verification message" : "Expected no arguments");
+        return nullptr;
+    }
+    if (verifyWindow) {
         void* handle;
         size_t length;
         char message[256];
-        if (count != 2 || napi_get_buffer_info(env, args[0], &handle, &length) != napi_ok || length != sizeof(HWND) ||
+        if (napi_get_buffer_info(env, args[0], &handle, &length) != napi_ok || length != sizeof(HWND) ||
             napi_get_value_string_utf8(env, args[1], message, sizeof(message), &length) != napi_ok) {
             napi_throw_type_error(env, nullptr, "Expected a window handle and a verification message");
             return nullptr;
@@ -133,10 +140,14 @@ static napi_value start(napi_env env, napi_callback_info info) {
 
 static napi_value init(napi_env env, napi_value exports) {
     napi_value verify;
-    napi_create_function(env, "verify", NAPI_AUTO_LENGTH, start, nullptr, &verify);
+    napi_create_function(env, "verify", NAPI_AUTO_LENGTH, [](napi_env env, napi_callback_info info) {
+        return start(env, info, true);
+    }, nullptr, &verify);
     napi_set_named_property(env, exports, "verify", verify);
     napi_value checkAvailability;
-    napi_create_function(env, "checkAvailability", NAPI_AUTO_LENGTH, start, nullptr, &checkAvailability);
+    napi_create_function(env, "checkAvailability", NAPI_AUTO_LENGTH, [](napi_env env, napi_callback_info info) {
+        return start(env, info, false);
+    }, nullptr, &checkAvailability);
     napi_set_named_property(env, exports, "checkAvailability", checkAvailability);
     return exports;
 }

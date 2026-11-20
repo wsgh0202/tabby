@@ -10,7 +10,7 @@ import { logMainError } from './errors'
 
 interface WindowsHello {
     checkAvailability: () => Promise<number>
-    verify: (window: Buffer, message: string) => Promise<boolean>
+    verify: (window: Buffer, message: string) => Promise<unknown>
 }
 
 // Values returned by the WinRT UserConsentVerifierAvailability enum.
@@ -86,7 +86,7 @@ export function registerWindowsHello (): void {
         if (!window?.isFocused() || !hello || !await safeStorage.isAsyncEncryptionAvailable()) {
             return false
         }
-        if (window.isDestroyed() || !await hello.verify(window.getNativeWindowHandle(), message)) {
+        if (window.isDestroyed() || await hello.verify(window.getNativeWindowHandle(), message) !== true) {
             return false
         }
         return trustedWindow(event) === window

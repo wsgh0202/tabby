@@ -81,6 +81,7 @@ export class VaultSettingsTabComponent extends BaseComponent {
         if (newPassphrase) {
             await this.vault.setEnabled(true, newPassphrase)
             this.vaultContents = await this.vault.load(newPassphrase)
+            await this.refreshWindowsHello()
         }
     }
 

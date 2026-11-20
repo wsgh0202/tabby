@@ -126,6 +126,7 @@ export class VaultService {
     async setEnabled (enabled: boolean, passphrase?: string): Promise<void> {
         if (enabled) {
             if (!this.store) {
+                await this.platform.revokeVaultWindowsHello()
                 await this.save(migrateVaultContent({}), passphrase)
             }
         } else {

@@ -522,6 +522,8 @@ export class ConfigService {
                     })
                     if (result.response === 1) {
                         this.platform.quit()
+                    } else {
+                        await this.platform.revokeVaultWindowsHello()
                     }
                     return {}
                 }
